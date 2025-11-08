@@ -1,13 +1,56 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertTriangle, Clock, Lock, BarChart3, List } from "lucide-react";
+import type { Order } from "@/pages/Dashboard";
+import { useMemo } from "react";
 
 interface DashboardHeaderProps {
   onToggleCharts: () => void;
   showCharts: boolean;
+  orders: Order[];
 }
 
-const DashboardHeader = ({ onToggleCharts, showCharts }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onToggleCharts, showCharts, orders }: DashboardHeaderProps) => {
+  const stats = useMemo(() => {
+    const byStatus = {
+      ok: { count: 0, value: 0 },
+      difference: { count: 0, value: 0 },
+      pending: { count: 0, value: 0 },
+      retained: { count: 0, value: 0 },
+    };
+
+    orders.forEach((order) => {
+      byStatus[order.status].count++;
+      byStatus[order.status].value += order.soldValue;
+    });
+
+    const total = orders.reduce((sum, order) => sum + order.soldValue, 0);
+    const reconciledPercentage = total > 0 
+      ? Math.round((byStatus.ok.value / total) * 100) 
+      : 0;
+
+    return {
+      reconciled: {
+        percentage: reconciledPercentage,
+        value: byStatus.ok.value,
+      },
+      difference: {
+        count: byStatus.difference.count,
+        value: orders
+          .filter(o => o.status === "difference")
+          .reduce((sum, o) => sum + Math.abs(o.difference), 0),
+      },
+      pending: {
+        count: byStatus.pending.count,
+        value: byStatus.pending.value,
+      },
+      retained: {
+        count: byStatus.retained.count,
+        value: byStatus.retained.value,
+      },
+    };
+  }, [orders]);
+
   return (
     <div className="border-b bg-card">
       <div className="container mx-auto p-6 space-y-6">
@@ -40,8 +83,10 @@ const DashboardHeader = ({ onToggleCharts, showCharts }: DashboardHeaderProps) =
               <span className="text-sm font-medium text-success">Conciliado</span>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-foreground">87%</p>
-              <p className="text-sm text-muted-foreground">R$ 32.000</p>
+              <p className="text-2xl font-bold text-foreground">{stats.reconciled.percentage}%</p>
+              <p className="text-sm text-muted-foreground">
+                R$ {stats.reconciled.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </Card>
 
@@ -51,8 +96,10 @@ const DashboardHeader = ({ onToggleCharts, showCharts }: DashboardHeaderProps) =
               <span className="text-sm font-medium text-warning">Com diferença</span>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-foreground">12</p>
-              <p className="text-sm text-muted-foreground">R$ 620</p>
+              <p className="text-2xl font-bold text-foreground">{stats.difference.count}</p>
+              <p className="text-sm text-muted-foreground">
+                R$ {stats.difference.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </Card>
 
@@ -62,8 +109,10 @@ const DashboardHeader = ({ onToggleCharts, showCharts }: DashboardHeaderProps) =
               <span className="text-sm font-medium text-neutral">A liberar</span>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-foreground">18</p>
-              <p className="text-sm text-muted-foreground">R$ 1.980</p>
+              <p className="text-2xl font-bold text-foreground">{stats.pending.count}</p>
+              <p className="text-sm text-muted-foreground">
+                R$ {stats.pending.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </Card>
 
@@ -73,8 +122,10 @@ const DashboardHeader = ({ onToggleCharts, showCharts }: DashboardHeaderProps) =
               <span className="text-sm font-medium text-danger">Retido</span>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-foreground">3</p>
-              <p className="text-sm text-muted-foreground">R$ 350</p>
+              <p className="text-2xl font-bold text-foreground">{stats.retained.count}</p>
+              <p className="text-sm text-muted-foreground">
+                R$ {stats.retained.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </Card>
         </div>

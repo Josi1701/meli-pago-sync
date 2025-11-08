@@ -124,7 +124,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader onToggleCharts={() => setShowCharts(!showCharts)} showCharts={showCharts} />
+      <DashboardHeader 
+        onToggleCharts={() => setShowCharts(!showCharts)} 
+        showCharts={showCharts}
+        orders={filteredOrders}
+      />
       
       <div className="container mx-auto p-6 space-y-6">
         {showCharts ? (
