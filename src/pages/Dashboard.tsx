@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import OrdersTable from "@/components/dashboard/OrdersTable";
 import OrderDetailPanel from "@/components/dashboard/OrderDetailPanel";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
+import DashboardFilters, { type Filters } from "@/components/dashboard/DashboardFilters";
 
 export interface Order {
   id: string;
@@ -89,6 +90,37 @@ const mockOrders: Order[] = [
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showCharts, setShowCharts] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    mode: "sale_date",
+    dateRange: { from: undefined, to: undefined },
+    status: [],
+    categories: [],
+    minDifference: null,
+    paymentMethod: [],
+  });
+
+  const filteredOrders = useMemo(() => {
+    return mockOrders.filter((order) => {
+      // Filter by date range
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const orderDate = new Date(order.date);
+        if (filters.dateRange.from && orderDate < filters.dateRange.from) return false;
+        if (filters.dateRange.to && orderDate > filters.dateRange.to) return false;
+      }
+
+      // Filter by status
+      if (filters.status.length > 0 && !filters.status.includes(order.status)) {
+        return false;
+      }
+
+      // Filter by minimum difference
+      if (filters.minDifference !== null && Math.abs(order.difference) < filters.minDifference) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [filters]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,12 +128,16 @@ const Dashboard = () => {
       
       <div className="container mx-auto p-6 space-y-6">
         {showCharts ? (
-          <DashboardCharts orders={mockOrders} />
+          <DashboardCharts orders={filteredOrders} />
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
+              <DashboardFilters 
+                filters={filters} 
+                onFiltersChange={setFilters}
+              />
               <OrdersTable 
-                orders={mockOrders} 
+                orders={filteredOrders} 
                 onSelectOrder={setSelectedOrder}
                 selectedOrderId={selectedOrder?.id}
               />
