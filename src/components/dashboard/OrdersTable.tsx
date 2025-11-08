@@ -1,8 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, AlertTriangle, Clock, Lock, Eye } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, Lock, Eye, XCircle, RotateCcw, Scale, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Order } from "@/pages/Dashboard";
+import type { Order, OrderSituation } from "@/pages/Dashboard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface OrdersTableProps {
   orders: Order[];
@@ -37,6 +43,50 @@ const statusConfig = {
   },
 };
 
+const situationConfig: Record<OrderSituation, {
+  icon: typeof XCircle;
+  label: string;
+  tooltip: string;
+  color: string;
+}> = {
+  active: {
+    icon: CheckCircle2,
+    label: "Ativa",
+    tooltip: "Venda ativa",
+    color: "text-muted-foreground",
+  },
+  cancelled_before_payment: {
+    icon: XCircle,
+    label: "Cancelada",
+    tooltip: "Venda cancelada antes do pagamento.",
+    color: "text-muted-foreground",
+  },
+  refunded: {
+    icon: RotateCcw,
+    label: "Devolvida",
+    tooltip: "O cliente devolveu o produto, valor reembolsado.",
+    color: "text-success",
+  },
+  partial_refund: {
+    icon: RotateCcw,
+    label: "Devolução parcial",
+    tooltip: "Parte do pedido foi devolvida.",
+    color: "text-warning",
+  },
+  in_dispute: {
+    icon: Scale,
+    label: "Em disputa",
+    tooltip: "O valor está retido enquanto o Mercado Livre analisa a disputa.",
+    color: "text-warning",
+  },
+  chargeback: {
+    icon: CreditCard,
+    label: "Chargeback",
+    tooltip: "Pagamento estornado pelo emissor do cartão.",
+    color: "text-danger",
+  },
+};
+
 const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProps) => {
   return (
     <Card className="overflow-hidden">
@@ -54,6 +104,7 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
               <th className="text-left p-4 text-sm font-medium text-muted-foreground">Pedido</th>
               <th className="text-left p-4 text-sm font-medium text-muted-foreground">Data</th>
               <th className="text-left p-4 text-sm font-medium text-muted-foreground">Produto</th>
+              <th className="text-center p-4 text-sm font-medium text-muted-foreground">Situação</th>
               <th className="text-right p-4 text-sm font-medium text-muted-foreground">Vendido</th>
               <th className="text-right p-4 text-sm font-medium text-muted-foreground">Recebido</th>
               <th className="text-right p-4 text-sm font-medium text-muted-foreground">Diferença</th>
@@ -65,6 +116,10 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
             {orders.map((order) => {
               const StatusIcon = statusConfig[order.status].icon;
               const isSelected = order.id === selectedOrderId;
+              const situation = order.situation || "active";
+              const SituationIcon = situationConfig[situation].icon;
+              const isRefunded = situation === "refunded" || situation === "partial_refund";
+              const isCancelled = situation === "cancelled_before_payment";
               
               return (
                 <tr 
@@ -86,13 +141,48 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
                   <td className="p-4 text-sm text-foreground">
                     {order.product}
                   </td>
-                  <td className="p-4 text-right text-sm font-medium text-foreground">
-                    R$ {order.soldValue.toFixed(2)}
+                  <td className="p-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex justify-center">
+                            {situation !== "active" && (
+                              <SituationIcon className={cn("w-5 h-5", situationConfig[situation].color)} />
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        {situation !== "active" && (
+                          <TooltipContent>
+                            <p>{situationConfig[situation].tooltip}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
-                  <td className="p-4 text-right text-sm font-medium text-foreground">
-                    {order.receivedValue > 0 
-                      ? `R$ ${order.receivedValue.toFixed(2)}`
-                      : "—"}
+                  <td className="p-4 text-right text-sm font-medium">
+                    <span className={cn(
+                      "text-foreground",
+                      (isRefunded || isCancelled) && "line-through text-muted-foreground"
+                    )}>
+                      R$ {order.soldValue.toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right text-sm font-medium">
+                    <div className="space-y-1">
+                      <span className={cn(
+                        "text-foreground",
+                        isRefunded && "line-through text-muted-foreground"
+                      )}>
+                        {order.receivedValue > 0 
+                          ? `R$ ${order.receivedValue.toFixed(2)}`
+                          : "—"}
+                      </span>
+                      {order.refund && (
+                        <div className="text-xs text-success">
+                          💸 R$ {order.refund.amount.toFixed(2)} devolvidos
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className={cn(
                     "p-4 text-right text-sm font-medium",

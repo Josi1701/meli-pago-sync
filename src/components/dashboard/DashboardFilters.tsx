@@ -33,6 +33,7 @@ export interface Filters {
   categories: string[];
   minDifference: number | null;
   paymentMethod: string[];
+  situation: string[];
 }
 
 interface DashboardFiltersProps {
@@ -55,6 +56,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
       categories: [],
       minDifference: null,
       paymentMethod: [],
+      situation: [],
     });
   };
 
@@ -63,13 +65,21 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
     filters.status.length > 0 || 
     filters.categories.length > 0 ||
     filters.minDifference !== null ||
-    filters.paymentMethod.length > 0;
+    filters.paymentMethod.length > 0 ||
+    filters.situation.length > 0;
 
   const toggleStatus = (value: string) => {
     const newStatus = filters.status.includes(value)
       ? filters.status.filter(s => s !== value)
       : [...filters.status, value];
     updateFilters({ status: newStatus });
+  };
+
+  const toggleSituation = (value: string) => {
+    const newSituation = filters.situation.includes(value)
+      ? filters.situation.filter(s => s !== value)
+      : [...filters.situation, value];
+    updateFilters({ situation: newSituation });
   };
 
   return (
@@ -277,6 +287,29 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
               placeholder="0.00"
             />
           </div>
+
+          {/* Situation Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Situação da venda</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: "refunded", label: "Devolvida", icon: "🔁" },
+                { value: "partial_refund", label: "Devolução parcial", icon: "🔁" },
+                { value: "in_dispute", label: "Em disputa", icon: "⚖️" },
+                { value: "chargeback", label: "Chargeback", icon: "💳" },
+                { value: "cancelled_before_payment", label: "Cancelada", icon: "🚫" },
+              ].map((situation) => (
+                <Badge
+                  key={situation.value}
+                  variant={filters.situation.includes(situation.value) ? "default" : "outline"}
+                  className="cursor-pointer transition-all"
+                  onClick={() => toggleSituation(situation.value)}
+                >
+                  {situation.icon} {situation.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -297,6 +330,11 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
           {filters.minDifference !== null && (
             <Badge variant="secondary">
               Dif. ≥ R$ {filters.minDifference.toFixed(2)}
+            </Badge>
+          )}
+          {filters.situation.length > 0 && (
+            <Badge variant="secondary">
+              {filters.situation.length} situações
             </Badge>
           )}
           <Button

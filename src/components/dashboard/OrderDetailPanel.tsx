@@ -1,13 +1,66 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle2, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { X, CheckCircle2, Search, AlertTriangle, Clock, Lock, XCircle, RotateCcw, Scale, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import type { Order } from "@/pages/Dashboard";
+import { cn } from "@/lib/utils";
+import type { Order, OrderSituation } from "@/pages/Dashboard";
 
 interface OrderDetailPanelProps {
   order: Order | null;
   onClose: () => void;
 }
+
+const statusConfig = {
+  ok: { icon: CheckCircle2, label: "OK", color: "text-success" },
+  difference: { icon: AlertTriangle, label: "Diferença", color: "text-warning" },
+  pending: { icon: Clock, label: "A liberar", color: "text-neutral" },
+  retained: { icon: Lock, label: "Retido", color: "text-danger" },
+};
+
+const situationConfig: Record<OrderSituation, {
+  icon: typeof XCircle;
+  label: string;
+  badge: string;
+  badgeColor: string;
+}> = {
+  active: {
+    icon: CheckCircle2,
+    label: "Venda ativa",
+    badge: "",
+    badgeColor: "",
+  },
+  cancelled_before_payment: {
+    icon: XCircle,
+    label: "Cancelado antes do repasse",
+    badge: "Cancelado",
+    badgeColor: "bg-muted text-muted-foreground",
+  },
+  refunded: {
+    icon: RotateCcw,
+    label: "Devolvido",
+    badge: "Devolvido",
+    badgeColor: "bg-success/10 text-success border-success",
+  },
+  partial_refund: {
+    icon: RotateCcw,
+    label: "Devolução parcial",
+    badge: "Devolução parcial",
+    badgeColor: "bg-warning/10 text-warning border-warning",
+  },
+  in_dispute: {
+    icon: Scale,
+    label: "Em disputa",
+    badge: "Em disputa",
+    badgeColor: "bg-warning/10 text-warning border-warning",
+  },
+  chargeback: {
+    icon: CreditCard,
+    label: "Perda confirmada",
+    badge: "Perda confirmada",
+    badgeColor: "bg-danger/10 text-danger border-danger",
+  },
+};
 
 const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
   if (!order) {
@@ -20,6 +73,12 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
       </Card>
     );
   }
+
+  const StatusIcon = statusConfig[order.status].icon;
+  const situation = order.situation || "active";
+  const SituationIcon = situationConfig[situation].icon;
+  const isRefunded = situation === "refunded" || situation === "partial_refund";
+  const isCancelled = situation === "cancelled_before_payment";
 
   return (
     <Card className="p-6 space-y-6">
@@ -37,103 +96,155 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
 
       <Separator />
 
-      <div className="space-y-4">
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">Identificação</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Pedido:</span>
-              <span className="text-sm font-medium text-foreground">{order.id}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Data:</span>
-              <span className="text-sm font-medium text-foreground">
-                {new Date(order.date).toLocaleDateString('pt-BR')}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Produto:</span>
-              <span className="text-sm font-medium text-foreground">{order.product}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Canal:</span>
-              <span className="text-sm font-medium text-foreground">{order.channel}</span>
-            </div>
-          </div>
+      {/* Status and Situation Badges */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <StatusIcon className={cn("w-5 h-5", statusConfig[order.status].color)} />
+          <span className={cn("font-medium", statusConfig[order.status].color)}>
+            {statusConfig[order.status].label}
+          </span>
         </div>
 
-        <Separator />
-
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-3">Resumo Financeiro</h4>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Valor original:</span>
-              <span className="text-lg font-semibold text-foreground">
-                R$ {order.soldValue.toFixed(2)}
-              </span>
-            </div>
-
-            {order.fees && order.fees.length > 0 && (
-              <div className="space-y-2 pl-4 border-l-2 border-muted">
-                {order.fees.map((fee, index) => (
-                  <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{fee.name}:</span>
-                      <span className="text-danger">
-                        -{fee.percentage.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground/70">{fee.origin}</span>
-                      <span className="text-danger font-medium">
-                        -R$ {fee.value.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <Separator />
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-muted-foreground">Valor líquido recebido:</span>
-              <span className="text-lg font-bold text-success">
-                {order.receivedValue > 0 
-                  ? `R$ ${order.receivedValue.toFixed(2)}`
-                  : "R$ 0,00"}
-              </span>
-            </div>
+        {situation !== "active" && (
+          <div className="flex items-center justify-center gap-2">
+            <Badge variant="outline" className={cn("gap-1.5 py-1.5", situationConfig[situation].badgeColor)}>
+              <SituationIcon className="w-4 h-4" />
+              {situationConfig[situation].badge}
+            </Badge>
           </div>
-        </div>
-
-        {order.explanation && (
-          <>
-            <Separator />
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="text-sm font-medium text-foreground mb-2">Explicação automática</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {order.explanation}
-              </p>
-            </div>
-          </>
         )}
+      </div>
 
-        <Separator />
+      <Separator />
 
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-muted-foreground">Ações disponíveis</h4>
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              Aceitar diferença
-            </Button>
-            <Button variant="outline" className="w-full gap-2">
-              <Search className="w-4 h-4" />
-              Ver pedidos semelhantes
-            </Button>
+      {/* Identification */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-muted-foreground">Identificação</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Pedido</span>
+            <span className="font-medium text-foreground">{order.id}</span>
           </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Data</span>
+            <span className="font-medium text-foreground">
+              {new Date(order.date).toLocaleDateString('pt-BR')}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Produto</span>
+            <span className="font-medium text-foreground">{order.product}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Canal</span>
+            <span className="font-medium text-foreground">{order.channel}</span>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Financial Summary */}
+      <div className="space-y-3">
+        <h3 className="font-semibold text-foreground">Resumo Financeiro</h3>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Valor vendido</span>
+            <span className={cn(
+              "font-medium",
+              (isRefunded || isCancelled) ? "line-through text-muted-foreground" : "text-foreground"
+            )}>
+              R$ {order.soldValue.toFixed(2)}
+            </span>
+          </div>
+
+          {order.fees && order.fees.length > 0 && (
+            <div className="space-y-1 pl-4 border-l-2 border-muted">
+              {order.fees.map((fee, index) => (
+                <div key={index} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    {fee.name} ({fee.percentage}% - {fee.origin})
+                  </span>
+                  <span className="text-danger">
+                    - R$ {fee.value.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {order.refund && (
+            <div className="p-3 bg-success/5 border border-success/20 rounded-lg space-y-2 animate-fade-in">
+              <div className="flex items-center gap-2 text-success">
+                <RotateCcw className="w-4 h-4" />
+                <span className="text-sm font-medium">Reembolso</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Valor devolvido</span>
+                <span className="font-medium text-success">
+                  💸 R$ {order.refund.amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Data</span>
+                <span className="text-foreground">
+                  {new Date(order.refund.date).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between text-sm pt-2 border-t">
+            <span className="text-muted-foreground">Valor recebido</span>
+            <span className={cn(
+              "font-medium",
+              isRefunded && "line-through text-muted-foreground"
+            )}>
+              {order.receivedValue > 0 
+                ? `R$ ${order.receivedValue.toFixed(2)}`
+                : "Não recebido"}
+            </span>
+          </div>
+
+          {order.difference !== 0 && (
+            <div className="flex justify-between text-sm font-medium pt-2 border-t">
+              <span className="text-foreground">Diferença</span>
+              <span className={cn(
+                order.difference < 0 ? "text-danger" : "text-success"
+              )}>
+                {order.difference > 0 ? '+' : ''}R$ {order.difference.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {order.explanation && (
+        <>
+          <Separator />
+          <div className="p-4 bg-muted/50 rounded-lg">
+            <h4 className="text-sm font-medium text-foreground mb-2">Explicação automática</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {order.explanation}
+            </p>
+          </div>
+        </>
+      )}
+
+      <Separator />
+
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-muted-foreground">Ações disponíveis</h4>
+        <div className="space-y-2">
+          <Button variant="outline" className="w-full gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            Aceitar diferença
+          </Button>
+          <Button variant="outline" className="w-full gap-2">
+            <Search className="w-4 h-4" />
+            Ver pedidos semelhantes
+          </Button>
         </div>
       </div>
     </Card>
