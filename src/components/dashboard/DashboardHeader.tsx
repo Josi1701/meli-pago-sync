@@ -1,16 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DollarSign, AlertTriangle, Clock, Lock, BarChart3, List, CheckCircle2, XCircle } from "lucide-react";
+import { DollarSign, AlertTriangle, Clock, Lock, BarChart3, List, CheckCircle2, XCircle, FileText } from "lucide-react";
 import type { Order } from "@/pages/Dashboard";
 import { useMemo } from "react";
 
 interface DashboardHeaderProps {
-  onToggleCharts: () => void;
-  showCharts: boolean;
+  onToggleView: () => void;
+  currentView: "table" | "charts" | "summary";
   orders: Order[];
 }
 
-const DashboardHeader = ({ onToggleCharts, showCharts, orders }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderProps) => {
   const stats = useMemo(() => {
     let releasedValue = 0;
     let releasedCount = 0;
@@ -93,19 +93,35 @@ const DashboardHeader = ({ onToggleCharts, showCharts, orders }: DashboardHeader
               Última atualização: hoje às 18:00
             </p>
           </div>
-          <Button onClick={onToggleCharts} variant="outline" className="gap-2">
-            {showCharts ? (
-              <>
-                <List className="w-4 h-4" />
-                Ver pedidos
-              </>
-            ) : (
-              <>
-                <BarChart3 className="w-4 h-4" />
-                Ver análises
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={onToggleView} 
+              variant={currentView === "table" ? "default" : "outline"} 
+              className="gap-2"
+              size="sm"
+            >
+              <List className="w-4 h-4" />
+              Pedidos
+            </Button>
+            <Button 
+              onClick={onToggleView} 
+              variant={currentView === "charts" ? "default" : "outline"} 
+              className="gap-2"
+              size="sm"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Análises
+            </Button>
+            <Button 
+              onClick={onToggleView} 
+              variant={currentView === "summary" ? "default" : "outline"} 
+              className="gap-2"
+              size="sm"
+            >
+              <FileText className="w-4 h-4" />
+              Resumo gerencial
+            </Button>
+          </div>
         </div>
 
         {/* Financial Status Cards */}

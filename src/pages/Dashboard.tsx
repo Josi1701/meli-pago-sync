@@ -4,6 +4,7 @@ import OrdersTable from "@/components/dashboard/OrdersTable";
 import OrderDetailPanel from "@/components/dashboard/OrderDetailPanel";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import DashboardFilters, { type Filters } from "@/components/dashboard/DashboardFilters";
+import ManagementSummary from "@/components/dashboard/ManagementSummary";
 
 export type FinancialStatus = 
   | "released"           // 💸 Liberado - Valor recebido e disponível
@@ -173,7 +174,7 @@ const mockOrders: Order[] = [
 
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showCharts, setShowCharts] = useState(false);
+  const [currentView, setCurrentView] = useState<"table" | "charts" | "summary">("table");
   const [filters, setFilters] = useState<Filters>({
     mode: "sale_date",
     dateRange: { from: undefined, to: undefined },
@@ -212,16 +213,28 @@ const Dashboard = () => {
     });
   }, [filters]);
 
+  const handleToggleView = () => {
+    if (currentView === "table") {
+      setCurrentView("charts");
+    } else if (currentView === "charts") {
+      setCurrentView("summary");
+    } else {
+      setCurrentView("table");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader 
-        onToggleCharts={() => setShowCharts(!showCharts)} 
-        showCharts={showCharts}
+        onToggleView={handleToggleView}
+        currentView={currentView}
         orders={filteredOrders}
       />
       
       <div className="container mx-auto p-6 space-y-6">
-        {showCharts ? (
+        {currentView === "summary" ? (
+          <ManagementSummary orders={filteredOrders} />
+        ) : currentView === "charts" ? (
           <DashboardCharts orders={filteredOrders} />
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
