@@ -57,6 +57,7 @@ const mockOrders: Order[] = [
     difference: -4.50,
     financialStatus: "released",
     reconciliationStatus: "difference_detected",
+    releaseDate: "2025-01-17",
     fees: [
       { name: "Intermediação", percentage: 2.99, value: 4.49, origin: "Mercado Pago" },
       { name: "Antecipação", percentage: 0.01, value: 0.01, origin: "Mercado Pago" },
@@ -73,6 +74,7 @@ const mockOrders: Order[] = [
     difference: 0,
     financialStatus: "released",
     reconciliationStatus: "reconciled",
+    releaseDate: "2025-01-17",
   },
   {
     id: "#324053",
@@ -860,9 +862,30 @@ const Dashboard = () => {
 
   const filteredOrders = useMemo(() => {
     return mockOrders.filter((order) => {
-      // Filter by date range
+      // Filter by date range based on mode
       if (filters.dateRange.from || filters.dateRange.to) {
-        const orderDate = new Date(order.date);
+        let orderDate: Date;
+        
+        if (filters.mode === "payment_date") {
+          // For payment_date mode:
+          // - Use releaseDate if explicitly set
+          // - For "released" status without releaseDate, assume it was released (use sale date + 7 days as estimate)
+          // - For other statuses without releaseDate, exclude them
+          if (order.releaseDate) {
+            orderDate = new Date(order.releaseDate);
+          } else if (order.financialStatus === "released") {
+            // Estimate: released 7 days after sale
+            orderDate = new Date(order.date);
+            orderDate.setDate(orderDate.getDate() + 7);
+          } else {
+            // Not released yet, exclude from payment_date view
+            return false;
+          }
+        } else {
+          // For sale_date mode, use the sale date
+          orderDate = new Date(order.date);
+        }
+        
         if (filters.dateRange.from && orderDate < filters.dateRange.from) return false;
         if (filters.dateRange.to && orderDate > filters.dateRange.to) return false;
       }
