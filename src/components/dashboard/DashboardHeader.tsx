@@ -124,7 +124,8 @@ const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderP
           </div>
         </div>
 
-        {/* Financial Status Cards */}
+        {/* Financial Status Cards - Hidden in summary view */}
+        {currentView !== "summary" && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-5 h-5 text-muted-foreground" />
@@ -197,8 +198,10 @@ const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderP
             </Card>
           </div>
         </div>
+        )}
 
-        {/* Reconciliation Status Cards */}
+        {/* Reconciliation Status Cards - Hidden in summary view */}
+        {currentView !== "summary" && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
@@ -256,6 +259,7 @@ const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderP
             </Card>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
