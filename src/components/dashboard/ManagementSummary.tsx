@@ -10,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 import type { Order } from "@/pages/Dashboard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import BalanceSummary from "./BalanceSummary";
 
 interface ManagementSummaryProps {
   orders: Order[];
@@ -173,6 +174,9 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Balance Summary */}
+      <BalanceSummary orders={orders} />
+
       {/* Filters */}
       <Card className="p-6">
         <div className="space-y-4">
