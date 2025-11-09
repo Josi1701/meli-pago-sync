@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
 import type { Order } from "@/pages/Dashboard";
 
 interface DashboardChartsProps {
@@ -16,23 +16,6 @@ const COLORS = {
 };
 
 const DashboardCharts = ({ orders }: DashboardChartsProps) => {
-  // Calculate financial status distribution
-  const financialStatusData = [
-    { name: "Liberado", value: orders.filter(o => o.financialStatus === "released").length, color: COLORS.ok },
-    { name: "A liberar", value: orders.filter(o => o.financialStatus === "pending_release").length, color: COLORS.pending },
-    { name: "Retido", value: orders.filter(o => o.financialStatus === "retained").length, color: COLORS.retained },
-    { name: "Devolvido", value: orders.filter(o => o.financialStatus === "refunded").length, color: COLORS.warning },
-    { name: "Cancelado", value: orders.filter(o => o.financialStatus === "cancelled").length, color: COLORS.danger },
-  ];
-
-  // Calculate reconciliation status distribution
-  const reconciliationStatusData = [
-    { name: "Conferido", value: orders.filter(o => o.reconciliationStatus === "reconciled").length, color: COLORS.ok },
-    { name: "Diferença", value: orders.filter(o => o.reconciliationStatus === "difference_detected").length, color: COLORS.difference },
-    { name: "Não conferido", value: orders.filter(o => o.reconciliationStatus === "not_reconciled").length, color: COLORS.danger },
-    { name: "Em conferência", value: orders.filter(o => o.reconciliationStatus === "in_progress").length, color: COLORS.warning },
-  ];
-
   // Calculate main causes of differences
   const causesData = [
     { name: "Taxas de intermediação", value: 45, color: COLORS.difference },
@@ -54,56 +37,28 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Distribuição por Status Financeiro
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={financialStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {financialStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        <Card className="p-6 bg-success-light border-success-border">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-success">Lucro invisível recuperado</p>
+            <p className="text-3xl font-bold text-foreground">R$ 1.240,00</p>
+            <p className="text-sm text-muted-foreground">
+              Diferenças identificadas e recuperadas automaticamente
+            </p>
+          </div>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Distribuição por Status de Conciliação
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={reconciliationStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {reconciliationStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        <Card className="p-6 bg-primary/5 border-primary/20">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-primary">Tempo economizado</p>
+            <p className="text-3xl font-bold text-foreground">12 horas</p>
+            <p className="text-sm text-muted-foreground">
+              Horas poupadas com automação este mês
+            </p>
+          </div>
         </Card>
+      </div>
 
+      <div className="grid md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Principais Causas de Diferença
@@ -148,28 +103,6 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
           </LineChart>
         </ResponsiveContainer>
       </Card>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-success-light border-success-border">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-success">Lucro invisível recuperado</p>
-            <p className="text-3xl font-bold text-foreground">R$ 1.240,00</p>
-            <p className="text-sm text-muted-foreground">
-              Diferenças identificadas e recuperadas automaticamente
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-primary/5 border-primary/20">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-primary">Tempo economizado</p>
-            <p className="text-3xl font-bold text-foreground">12 horas</p>
-            <p className="text-sm text-muted-foreground">
-              Horas poupadas com automação este mês
-            </p>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 };
