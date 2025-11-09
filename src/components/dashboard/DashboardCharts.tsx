@@ -33,6 +33,10 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
     { name: "Em conferência", value: orders.filter(o => o.reconciliationStatus === "in_progress").length, color: COLORS.warning },
   ];
 
+  // Totals for empty-state handling
+  const financialTotal = financialStatusData.reduce((sum, d) => sum + d.value, 0);
+  const reconciliationTotal = reconciliationStatusData.reduce((sum, d) => sum + d.value, 0);
+
   // Calculate main causes of differences
   const causesData = [
     { name: "Taxas de intermediação", value: 45, color: COLORS.difference },
@@ -80,50 +84,62 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Distribuição por Status Financeiro
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={financialStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {financialStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {financialTotal > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={financialStatusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${Number.isFinite(percent) ? (percent * 100).toFixed(0) : 0}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {financialStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+              Sem dados para o período
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Distribuição por Status de Conciliação
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={reconciliationStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {reconciliationStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {reconciliationTotal > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={reconciliationStatusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${Number.isFinite(percent) ? (percent * 100).toFixed(0) : 0}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {reconciliationStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+              Sem dados para o período
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">
