@@ -16,23 +16,6 @@ const COLORS = {
 };
 
 const DashboardCharts = ({ orders }: DashboardChartsProps) => {
-  // Calculate financial status distribution
-  const financialStatusData = [
-    { name: "Liberado", value: orders.filter(o => o.financialStatus === "released").length, color: COLORS.ok },
-    { name: "A liberar", value: orders.filter(o => o.financialStatus === "pending_release").length, color: COLORS.pending },
-    { name: "Retido", value: orders.filter(o => o.financialStatus === "retained").length, color: COLORS.retained },
-    { name: "Devolvido", value: orders.filter(o => o.financialStatus === "refunded").length, color: COLORS.warning },
-    { name: "Cancelado", value: orders.filter(o => o.financialStatus === "cancelled").length, color: COLORS.danger },
-  ];
-
-  // Calculate reconciliation status distribution
-  const reconciliationStatusData = [
-    { name: "Conferido", value: orders.filter(o => o.reconciliationStatus === "reconciled").length, color: COLORS.ok },
-    { name: "Diferença", value: orders.filter(o => o.reconciliationStatus === "difference_detected").length, color: COLORS.difference },
-    { name: "Não conferido", value: orders.filter(o => o.reconciliationStatus === "not_reconciled").length, color: COLORS.danger },
-    { name: "Em conferência", value: orders.filter(o => o.reconciliationStatus === "in_progress").length, color: COLORS.warning },
-  ];
-
   // Calculate main causes of differences
   const causesData = [
     { name: "Taxas de intermediação", value: 45, color: COLORS.difference },
@@ -54,56 +37,6 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Distribuição por Status Financeiro
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={financialStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {financialStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Distribuição por Status de Conciliação
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={reconciliationStatusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {reconciliationStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Principais Causas de Diferença
