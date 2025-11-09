@@ -1,14 +1,20 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, CheckCircle2, Search, AlertTriangle, Clock, Lock, XCircle, RotateCcw, Scale, CreditCard } from "lucide-react";
+import { X, CheckCircle2, Search, AlertTriangle, Clock, Lock, XCircle, RotateCcw, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { Order, FinancialStatus, ReconciliationStatus } from "@/pages/Dashboard";
+import { useState } from "react";
+import SupportModal from "./SupportModal";
+import ResolutionModal from "./ResolutionModal";
 
 interface OrderDetailPanelProps {
   order: Order | null;
   onClose: () => void;
+  onOpenSupport: (orderId: string, description: string) => void;
+  onMarkAsRecovered: (orderId: string) => void;
+  onConfirmCost: (orderId: string) => void;
 }
 
 const financialStatusConfig: Record<FinancialStatus, {
@@ -81,7 +87,10 @@ const reconciliationStatusConfig: Record<ReconciliationStatus, {
   },
 };
 
-const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
+const OrderDetailPanel = ({ order, onClose, onOpenSupport, onMarkAsRecovered, onConfirmCost }: OrderDetailPanelProps) => {
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
+  const [resolutionType, setResolutionType] = useState<"recovered" | "confirmed_cost">("recovered");
   if (!order) {
     return (
       <Card className="p-8 flex flex-col items-center justify-center min-h-[400px] text-center">
@@ -99,7 +108,8 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
   const isCancelled = order.financialStatus === "cancelled";
 
   return (
-    <Card className="p-6 space-y-6">
+    <>
+      <Card className="p-6 space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-xl font-semibold text-foreground">Detalhes do Pedido</h3>
@@ -284,20 +294,158 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
 
       <Separator />
 
+      {order.difference !== 0 && order.differenceStatus && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-muted-foreground">Gestão da Diferença</h4>
+          {order.differenceStatus === "detected" && (
+            <div className="space-y-3">
+              <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-warning">Diferença detectada</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      R$ {Math.abs(order.difference).toFixed(2)} — revise ou abra suporte
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                className="w-full gap-2 border-warning text-warning hover:bg-warning/10"
+                onClick={() => setSupportModalOpen(true)}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Abrir suporte
+              </Button>
+            </div>
+          )}
+          {order.differenceStatus === "support_open" && (
+            <div className="space-y-3">
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Mail className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-500">Suporte em andamento</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Aguardando retorno do Mercado Livre
+                    </p>
+                    {order.supportOpenedAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Aberto em: {new Date(order.supportOpenedAt).toLocaleDateString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 border-success text-success hover:bg-success/10"
+                  onClick={() => {
+                    setResolutionType("recovered");
+                    setResolutionModalOpen(true);
+                  }}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Marcar como recuperado
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 border-danger text-danger hover:bg-danger/10"
+                  onClick={() => {
+                    setResolutionType("confirmed_cost");
+                    setResolutionModalOpen(true);
+                  }}
+                >
+                  <XCircle className="w-4 h-4" />
+                  Confirmar custo
+                </Button>
+              </div>
+            </div>
+          )}
+          {order.differenceStatus === "recovered" && (
+            <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-success">✅ Valor recuperado</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Diferença compensada em repasse
+                  </p>
+                  {order.resolvedAt && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Resolvido em: {new Date(order.resolvedAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {order.differenceStatus === "confirmed_cost" && (
+            <div className="p-3 bg-danger/10 border border-danger/20 rounded-lg">
+              <div className="flex items-start gap-2">
+                <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-danger">❌ Custo confirmado</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Perda absorvida e contabilizada
+                  </p>
+                  {order.resolvedAt && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Confirmado em: {new Date(order.resolvedAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <Separator />
+
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-muted-foreground">Ações disponíveis</h4>
+        <h4 className="text-sm font-medium text-muted-foreground">Outras ações</h4>
         <div className="space-y-2">
-          <Button variant="outline" className="w-full gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            Aceitar diferença
-          </Button>
           <Button variant="outline" className="w-full gap-2">
             <Search className="w-4 h-4" />
             Ver pedidos semelhantes
           </Button>
         </div>
       </div>
-    </Card>
+      </Card>
+
+      {order && (
+      <>
+        <SupportModal
+          open={supportModalOpen}
+          onOpenChange={setSupportModalOpen}
+          orderId={order.id}
+          differenceValue={order.difference}
+          onConfirm={(description) => {
+            onOpenSupport(order.id, description);
+            setSupportModalOpen(false);
+          }}
+        />
+        <ResolutionModal
+          open={resolutionModalOpen}
+          onOpenChange={setResolutionModalOpen}
+          type={resolutionType}
+          orderId={order.id}
+          differenceValue={order.difference}
+          onConfirm={() => {
+            if (resolutionType === "recovered") {
+              onMarkAsRecovered(order.id);
+            } else {
+              onConfirmCost(order.id);
+            }
+            setResolutionModalOpen(false);
+          }}
+        />
+      </>
+      )}
+    </>
   );
 };
 

@@ -1,20 +1,26 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye } from "lucide-react";
+import { Eye, AlertTriangle, Mail, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Order, FinancialStatus, ReconciliationStatus } from "@/pages/Dashboard";
+import type { Order, FinancialStatus, ReconciliationStatus, DifferenceStatus } from "@/pages/Dashboard";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useState } from "react";
+import SupportModal from "./SupportModal";
+import ResolutionModal from "./ResolutionModal";
 
 interface OrdersTableProps {
   orders: Order[];
   onSelectOrder: (order: Order) => void;
   selectedOrderId?: string;
+  onOpenSupport: (orderId: string, description: string) => void;
+  onMarkAsRecovered: (orderId: string) => void;
+  onConfirmCost: (orderId: string) => void;
 }
 
 const financialStatusConfig: Record<FinancialStatus, {
@@ -87,15 +93,52 @@ const reconciliationStatusConfig: Record<ReconciliationStatus, {
   },
 };
 
-const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProps) => {
+const differenceStatusConfig: Record<Exclude<DifferenceStatus, null>, {
+  icon: typeof AlertTriangle;
+  label: string;
+  tooltip: string;
+  color: string;
+}> = {
+  detected: {
+    icon: AlertTriangle,
+    label: "Detectada",
+    tooltip: "Diferença detectada — revise ou abra suporte",
+    color: "text-warning bg-warning/10 border-warning",
+  },
+  support_open: {
+    icon: Mail,
+    label: "Em suporte",
+    tooltip: "Suporte aberto: aguardando retorno do Mercado Livre",
+    color: "text-blue-500 bg-blue-500/10 border-blue-500",
+  },
+  recovered: {
+    icon: CheckCircle2,
+    label: "Recuperado",
+    tooltip: "Valor recuperado: diferença compensada em repasse",
+    color: "text-success bg-success/10 border-success",
+  },
+  confirmed_cost: {
+    icon: XCircle,
+    label: "Custo",
+    tooltip: "Custo confirmado: perda absorvida",
+    color: "text-danger bg-danger/10 border-danger",
+  },
+};
+
+const OrdersTable = ({ orders, onSelectOrder, selectedOrderId, onOpenSupport, onMarkAsRecovered, onConfirmCost }: OrdersTableProps) => {
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
+  const [selectedOrderForAction, setSelectedOrderForAction] = useState<Order | null>(null);
+  const [resolutionType, setResolutionType] = useState<"recovered" | "confirmed_cost">("recovered");
   return (
-    <Card className="overflow-hidden">
-      <div className="p-4 border-b bg-muted/50">
-        <h2 className="text-lg font-semibold text-foreground">Lista de Pedidos</h2>
-        <p className="text-sm text-muted-foreground">
-          {orders.length} pedidos encontrados
-        </p>
-      </div>
+    <>
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b bg-muted/50">
+          <h2 className="text-lg font-semibold text-foreground">Lista de Pedidos</h2>
+          <p className="text-sm text-muted-foreground">
+            {orders.length} pedidos encontrados
+          </p>
+        </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -109,6 +152,7 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
               <th className="text-right p-4 text-sm font-medium text-muted-foreground">Diferença</th>
               <th className="text-center p-4 text-sm font-medium text-muted-foreground">Status Financeiro</th>
               <th className="text-center p-4 text-sm font-medium text-muted-foreground">Status Conciliação</th>
+              <th className="text-center p-4 text-sm font-medium text-muted-foreground">Situação da Diferença</th>
               <th className="text-center p-4 text-sm font-medium text-muted-foreground">Ação</th>
             </tr>
           </thead>
@@ -212,19 +256,97 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
                     </TooltipProvider>
                   </td>
                   <td className="p-4">
-                    <div className="flex justify-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectOrder(order);
-                        }}
-                        className="gap-1.5"
-                      >
-                        <Eye className="w-4 h-4" />
-                        Ver
-                      </Button>
+                    {order.difference !== 0 && order.differenceStatus ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex justify-center">
+                              <Badge 
+                                variant="outline" 
+                                className={cn("gap-1.5", differenceStatusConfig[order.differenceStatus].color)}
+                              >
+                                {order.differenceStatus === "detected" && <AlertTriangle className="w-3 h-3" />}
+                                {order.differenceStatus === "support_open" && <Mail className="w-3 h-3" />}
+                                {order.differenceStatus === "recovered" && <CheckCircle2 className="w-3 h-3" />}
+                                {order.differenceStatus === "confirmed_cost" && <XCircle className="w-3 h-3" />}
+                                <span className="text-xs">{differenceStatusConfig[order.differenceStatus].label}</span>
+                              </Badge>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{differenceStatusConfig[order.differenceStatus].tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <div className="flex justify-center">
+                        <span className="text-xs text-muted-foreground">—</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex justify-center gap-2">
+                      {order.difference !== 0 && order.differenceStatus === "detected" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrderForAction(order);
+                            setSupportModalOpen(true);
+                          }}
+                          className="gap-1.5 text-warning border-warning hover:bg-warning/10"
+                        >
+                          <AlertTriangle className="w-4 h-4" />
+                          Abrir suporte
+                        </Button>
+                      )}
+                      {order.difference !== 0 && order.differenceStatus === "support_open" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrderForAction(order);
+                              setResolutionType("recovered");
+                              setResolutionModalOpen(true);
+                            }}
+                            className="gap-1.5 text-success border-success hover:bg-success/10"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Recuperado
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrderForAction(order);
+                              setResolutionType("confirmed_cost");
+                              setResolutionModalOpen(true);
+                            }}
+                            className="gap-1.5 text-danger border-danger hover:bg-danger/10"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Custo
+                          </Button>
+                        </>
+                      )}
+                      {(!order.difference || !order.differenceStatus || order.differenceStatus === "recovered" || order.differenceStatus === "confirmed_cost") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectOrder(order);
+                          }}
+                          className="gap-1.5"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -234,6 +356,33 @@ const OrdersTable = ({ orders, onSelectOrder, selectedOrderId }: OrdersTableProp
         </table>
       </div>
     </Card>
+
+    {selectedOrderForAction && (
+      <>
+        <SupportModal
+          open={supportModalOpen}
+          onOpenChange={setSupportModalOpen}
+          orderId={selectedOrderForAction.id}
+          differenceValue={selectedOrderForAction.difference}
+          onConfirm={(description) => onOpenSupport(selectedOrderForAction.id, description)}
+        />
+        <ResolutionModal
+          open={resolutionModalOpen}
+          onOpenChange={setResolutionModalOpen}
+          type={resolutionType}
+          orderId={selectedOrderForAction.id}
+          differenceValue={selectedOrderForAction.difference}
+          onConfirm={() => {
+            if (resolutionType === "recovered") {
+              onMarkAsRecovered(selectedOrderForAction.id);
+            } else {
+              onConfirmCost(selectedOrderForAction.id);
+            }
+          }}
+        />
+      </>
+    )}
+    </>
   );
 };
 

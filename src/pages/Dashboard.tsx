@@ -5,6 +5,7 @@ import OrderDetailPanel from "@/components/dashboard/OrderDetailPanel";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import DashboardFilters, { type Filters } from "@/components/dashboard/DashboardFilters";
 import ManagementSummary from "@/components/dashboard/ManagementSummary";
+import { toast } from "@/hooks/use-toast";
 
 export type FinancialStatus = 
   | "released"           // 💸 Liberado - Valor recebido e disponível
@@ -18,6 +19,13 @@ export type ReconciliationStatus =
   | "difference_detected" // ⚠️ Diferença detectada - Valores diferentes mas explicável
   | "not_reconciled"     // ❌ Não conferido - Sem registro correspondente
   | "in_progress";       // ⏺️ Em conferência - Processo em execução
+
+export type DifferenceStatus = 
+  | "detected"           // ⚠️ Diferença detectada
+  | "support_open"       // 📨 Suporte aberto
+  | "recovered"          // ✅ Valor recuperado
+  | "confirmed_cost"     // ❌ Custo confirmado
+  | null;                // Sem diferença
 
 export interface Order {
   id: string;
@@ -41,7 +49,11 @@ export interface Order {
     origin: string;
   }>;
   explanation?: string;
-  releaseDate?: string; // Data prevista de liberação
+  releaseDate?: string;
+  differenceStatus?: DifferenceStatus;
+  supportOpenedAt?: string;
+  supportDescription?: string;
+  resolvedAt?: string;
 }
 
 // Mock data - Expanded dataset for management summary validation
@@ -58,6 +70,7 @@ const mockOrders: Order[] = [
     financialStatus: "released",
     reconciliationStatus: "difference_detected",
     releaseDate: "2025-01-17",
+    differenceStatus: "detected",
     fees: [
       { name: "Intermediação", percentage: 2.99, value: 4.49, origin: "Mercado Pago" },
       { name: "Antecipação", percentage: 0.01, value: 0.01, origin: "Mercado Pago" },
@@ -840,6 +853,64 @@ const mockOrders: Order[] = [
 
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+
+  const handleOpenSupport = (orderId: string, description: string) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              differenceStatus: "support_open" as DifferenceStatus,
+              supportOpenedAt: new Date().toISOString(),
+              supportDescription: description
+            }
+          : order
+      )
+    );
+    toast({
+      title: "Suporte aberto",
+      description: "Acompanhe a resolução deste valor.",
+    });
+  };
+
+  const handleMarkAsRecovered = (orderId: string) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              differenceStatus: "recovered" as DifferenceStatus,
+              resolvedAt: new Date().toISOString()
+            }
+          : order
+      )
+    );
+    toast({
+      title: "✅ Valor recuperado",
+      description: "A diferença foi registrada como recuperada.",
+      variant: "default",
+    });
+  };
+
+  const handleConfirmCost = (orderId: string) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              differenceStatus: "confirmed_cost" as DifferenceStatus,
+              resolvedAt: new Date().toISOString()
+            }
+          : order
+      )
+    );
+    toast({
+      title: "❌ Custo confirmado",
+      description: "A diferença foi registrada como custo.",
+      variant: "destructive",
+    });
+  };
   const [currentView, setCurrentView] = useState<"table" | "charts" | "summary">("table");
   
   // Default to current month and payment_date mode
@@ -861,7 +932,7 @@ const Dashboard = () => {
   });
 
   const filteredOrders = useMemo(() => {
-    return mockOrders.filter((order) => {
+    return orders.filter((order) => {
       // Filter by date range based on mode
       if (filters.dateRange.from || filters.dateRange.to) {
         let orderDate: Date;
@@ -902,7 +973,7 @@ const Dashboard = () => {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, orders]);
 
   const handleToggleView = () => {
     if (currentView === "table") {
@@ -956,16 +1027,22 @@ const Dashboard = () => {
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <OrdersTable 
-                orders={filteredOrders} 
-                onSelectOrder={setSelectedOrder}
-                selectedOrderId={selectedOrder?.id}
-              />
+            <OrdersTable 
+              orders={filteredOrders} 
+              onSelectOrder={setSelectedOrder}
+              selectedOrderId={selectedOrder?.id}
+              onOpenSupport={handleOpenSupport}
+              onMarkAsRecovered={handleMarkAsRecovered}
+              onConfirmCost={handleConfirmCost}
+            />
             </div>
             <div className="lg:col-span-1">
               <OrderDetailPanel 
                 order={selectedOrder} 
                 onClose={() => setSelectedOrder(null)}
+                onOpenSupport={handleOpenSupport}
+                onMarkAsRecovered={handleMarkAsRecovered}
+                onConfirmCost={handleConfirmCost}
               />
             </div>
           </div>

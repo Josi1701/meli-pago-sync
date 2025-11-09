@@ -10,6 +10,15 @@ interface BalanceSummaryProps {
 
 const BalanceSummary = ({ orders }: BalanceSummaryProps) => {
   const balanceData = useMemo(() => {
+    // Calcular diferenças não resolvidas (apenas detected e support_open)
+    const unresolvedDifferences = orders
+      .filter((o) => 
+        o.difference !== 0 && 
+        o.differenceStatus && 
+        (o.differenceStatus === "detected" || o.differenceStatus === "support_open")
+      )
+      .reduce((sum, o) => sum + Math.abs(o.difference), 0);
+
     // Saldo conciliado = Total recebido + A liberar + Retido - Devoluções
     const totalReceived = orders
       .filter((o) => o.financialStatus === "released")
@@ -45,6 +54,7 @@ const BalanceSummary = ({ orders }: BalanceSummaryProps) => {
       difference,
       differencePercentage,
       unreconciled,
+      unresolvedDifferences,
     };
   }, [orders]);
 
@@ -118,20 +128,30 @@ const BalanceSummary = ({ orders }: BalanceSummaryProps) => {
           </CardContent>
         </Card>
 
-        {/* Diferença Explicada */}
-        <Card className={balanceData.difference > 0 ? "border-warning/20 bg-warning-light/50" : "border-border"}>
+        {/* Diferenças Detectadas */}
+        <Card className={balanceData.unresolvedDifferences > 0 ? "border-warning/20 bg-warning-light/50" : "border-border"}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Info className="w-4 h-4 text-warning" />
-              Diferença explicada
+              <AlertCircle className="w-4 h-4 text-warning" />
+              Diferenças não resolvidas
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-3 h-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Soma das diferenças detectadas ou em suporte. Não inclui valores já recuperados ou confirmados como custo.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {formatCurrency(balanceData.difference)}
+              {formatCurrency(balanceData.unresolvedDifferences)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {balanceData.differencePercentage.toFixed(1)}% do saldo total
+              Valores a investigar ou em análise
             </p>
           </CardContent>
         </Card>
