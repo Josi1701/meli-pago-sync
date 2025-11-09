@@ -10,7 +10,7 @@ const messages = [
   "Lendo pagamentos do Mercado Pago...",
   "Aplicando regras inteligentes...",
   "Cruzando dados...",
-  "Pronto! Seus resultados estão sendo conciliados."
+  "Pronto! Seus resultados estão sendo conferidos."
 ];
 
 const SyncingStep = ({ onComplete }: SyncingStepProps) => {

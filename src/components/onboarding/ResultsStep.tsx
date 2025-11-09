@@ -35,7 +35,7 @@ const ResultsStep = ({ period, customDates, onFinish }: ResultsStepProps) => {
                   <CheckCircle2 className="w-6 h-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-success">Conciliado</p>
+                  <p className="text-sm font-medium text-success">Conferido</p>
                   <p className="text-3xl font-bold text-foreground">83%</p>
                 </div>
               </div>
