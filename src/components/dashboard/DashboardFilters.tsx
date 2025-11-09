@@ -38,8 +38,6 @@ export interface Filters {
   financialStatus: string[];
   reconciliationStatus: string[];
   categories: string[];
-  minDifference: number | null;
-  paymentMethod: string[];
 }
 
 interface DashboardFiltersProps {
@@ -76,8 +74,6 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
       financialStatus: [],
       reconciliationStatus: [],
       categories: [],
-      minDifference: null,
-      paymentMethod: [],
     });
   };
 
@@ -85,9 +81,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
     filters.dateRange.from || 
     filters.financialStatus.length > 0 || 
     filters.reconciliationStatus.length > 0 || 
-    filters.categories.length > 0 ||
-    filters.minDifference !== null ||
-    filters.paymentMethod.length > 0;
+    filters.categories.length > 0;
 
   const toggleFinancialStatus = (value: string) => {
     const newStatus = filters.financialStatus.includes(value)
@@ -300,6 +294,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
           <p className="text-xs text-muted-foreground">
             Máximo de 60 dias por período
           </p>
+
           {/* Financial Status Filter */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -355,48 +350,6 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
                 </Badge>
               ))}
             </div>
-          </div>
-
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Método de pagamento</label>
-            <Select
-              value={filters.paymentMethod[0] || "all"}
-              onValueChange={(value) => 
-                updateFilters({ paymentMethod: value === "all" ? [] : [value] })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="credit_card">Cartão de crédito</SelectItem>
-                <SelectItem value="debit_card">Cartão de débito</SelectItem>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="boleto">Boleto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Min Difference */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Diferença mínima (R$)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={filters.minDifference || ""}
-              onChange={(e) => 
-                updateFilters({ 
-                  minDifference: e.target.value ? parseFloat(e.target.value) : null 
-                })
-              }
-              className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
-              placeholder="0.00"
-            />
           </div>
         </div>
       )}

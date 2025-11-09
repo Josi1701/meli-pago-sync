@@ -856,8 +856,6 @@ const Dashboard = () => {
     financialStatus: [],
     reconciliationStatus: [],
     categories: [],
-    minDifference: null,
-    paymentMethod: [],
   });
 
   const filteredOrders = useMemo(() => {
@@ -876,11 +874,6 @@ const Dashboard = () => {
 
       // Filter by reconciliation status
       if (filters.reconciliationStatus.length > 0 && !filters.reconciliationStatus.includes(order.reconciliationStatus)) {
-        return false;
-      }
-
-      // Filter by minimum difference
-      if (filters.minDifference !== null && Math.abs(order.difference) < filters.minDifference) {
         return false;
       }
 

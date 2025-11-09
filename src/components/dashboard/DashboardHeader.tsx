@@ -31,8 +31,9 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
     let notReconciledCount = 0;
     let inProgressCount = 0;
 
+    // Separate calculation for financial and reconciliation bases
     orders.forEach((order) => {
-      // Financial Status
+      // Financial Status - all orders
       if (order.financialStatus === "released") {
         releasedCount++;
         releasedValue += order.receivedValue;
@@ -48,8 +49,11 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
       } else if (order.financialStatus === "cancelled") {
         cancelledCount++;
       }
+    });
 
-      // Reconciliation Status
+    // Reconciliation Status - exclude cancelled orders
+    const reconcilableOrders = orders.filter(order => order.financialStatus !== 'cancelled');
+    reconcilableOrders.forEach((order) => {
       if (order.reconciliationStatus === "reconciled") {
         reconciledCount++;
         reconciledValue += order.soldValue;
@@ -63,9 +67,9 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
       }
     });
 
-    const total = orders.reduce((sum, order) => sum + order.soldValue, 0);
-    const reconciledPercentage = total > 0 
-      ? Math.round((reconciledValue / total) * 100) 
+    const reconcilableTotal = reconcilableOrders.reduce((sum, order) => sum + order.soldValue, 0);
+    const reconciledPercentage = reconcilableTotal > 0 
+      ? Math.round((reconciledValue / reconcilableTotal) * 100) 
       : 0;
 
     return {
