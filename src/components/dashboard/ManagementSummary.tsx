@@ -392,6 +392,16 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
                   ))}
                 </tr>
 
+                {/* Total Recebido */}
+                <tr className="border-b border-border hover:bg-muted/50">
+                  <td className="py-3 px-4 text-foreground font-semibold">Total recebido</td>
+                  {periodStats.map((stat) => (
+                    <td key={stat.month} className="text-right py-3 px-4">
+                      <div className="text-success font-medium">{formatCurrency(stat.totalReceived)}</div>
+                    </td>
+                  ))}
+                </tr>
+
                 {/* Custos Section */}
                 <tr className="border-b border-border bg-danger-light">
                   <td colSpan={periodStats.length + 1} className="py-2 px-4">
@@ -462,37 +472,12 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
                   ))}
                 </tr>
 
-                {/* Recebimentos Section */}
-                <tr className="border-b border-border bg-muted/50">
-                  <td colSpan={periodStats.length + 1} className="py-2 px-4">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="font-semibold text-muted-foreground cursor-help flex items-center gap-1">
-                            🟢 RECEBIMENTOS
-                            <Info className="w-3 h-3" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Mostra os valores efetivamente recebidos ou a receber dos pedidos conciliados</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </td>
-                </tr>
-                <tr className="border-b border-border hover:bg-muted/50">
-                  <td className="py-3 px-4 text-foreground">Total recebido</td>
-                  {periodStats.map((stat) => (
-                    <td key={stat.month} className="text-right py-3 px-4">
-                      <div className="text-success font-medium">{formatCurrency(stat.totalReceived)}</div>
-                    </td>
-                  ))}
-                </tr>
+                {/* A liberar / Retidos */}
                 <tr className="border-b border-border hover:bg-muted/50">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <td className="py-3 px-4 text-foreground cursor-help">
+                        <td className="py-3 px-4 text-foreground cursor-help font-semibold">
                           A liberar / Retidos
                           <Info className="w-3 h-3 inline ml-1 text-muted-foreground" />
                         </td>
