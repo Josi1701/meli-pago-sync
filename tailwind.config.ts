@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -72,6 +75,9 @@ export default {
           light: "hsl(var(--neutral-light))",
           border: "hsl(var(--neutral-border))",
         },
+        difference: "hsl(var(--difference))",
+        pending: "hsl(var(--pending))",
+        retained: "hsl(var(--retained))",
       },
       borderRadius: {
         lg: "var(--radius)",
