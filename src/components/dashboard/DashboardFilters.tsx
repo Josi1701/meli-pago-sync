@@ -107,7 +107,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
         <Badge 
           variant="secondary" 
           className="gap-1 cursor-pointer hover:opacity-80"
-          onClick={() => {}}
+          onClick={() => setShowAdvanced(!showAdvanced)}
         >
           {filters.mode === "payment_date" ? "💸" : "🛒"}
           Modo: {filters.mode === "payment_date" ? "Repasse" : "Venda"}
@@ -115,7 +115,11 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
 
         {/* Period Chip */}
         {filters.dateRange.from && (
-          <Badge variant="secondary" className="gap-1">
+          <Badge 
+            variant="secondary" 
+            className="gap-1 cursor-pointer hover:opacity-80"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
             <Calendar className="w-3 h-3" />
             Período: {format(filters.dateRange.from, "dd/MM")}
             {filters.dateRange.to && ` – ${format(filters.dateRange.to, "dd/MM")}`}
@@ -141,7 +145,11 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
             </Badge>
           ))
         ) : (
-          <Badge variant="secondary" className="gap-1">
+          <Badge 
+            variant="secondary" 
+            className="gap-1 cursor-pointer hover:opacity-80"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
             Fin: Todos
           </Badge>
         )}
@@ -164,7 +172,11 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
             </Badge>
           ))
         ) : (
-          <Badge variant="secondary" className="gap-1">
+          <Badge 
+            variant="secondary" 
+            className="gap-1 cursor-pointer hover:opacity-80"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
             Conc: Todos
           </Badge>
         )}
