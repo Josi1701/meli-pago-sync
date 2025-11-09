@@ -54,6 +54,28 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
+        <Card className="p-6 bg-success-light border-success-border">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-success">Lucro invisível recuperado</p>
+            <p className="text-3xl font-bold text-foreground">R$ 1.240,00</p>
+            <p className="text-sm text-muted-foreground">
+              Diferenças identificadas e recuperadas automaticamente
+            </p>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-primary/5 border-primary/20">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-primary">Tempo economizado</p>
+            <p className="text-3xl font-bold text-foreground">12 horas</p>
+            <p className="text-sm text-muted-foreground">
+              Horas poupadas com automação este mês
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Distribuição por Status Financeiro
@@ -148,28 +170,6 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
           </LineChart>
         </ResponsiveContainer>
       </Card>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-success-light border-success-border">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-success">Lucro invisível recuperado</p>
-            <p className="text-3xl font-bold text-foreground">R$ 1.240,00</p>
-            <p className="text-sm text-muted-foreground">
-              Diferenças identificadas e recuperadas automaticamente
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-primary/5 border-primary/20">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-primary">Tempo economizado</p>
-            <p className="text-3xl font-bold text-foreground">12 horas</p>
-            <p className="text-sm text-muted-foreground">
-              Horas poupadas com automação este mês
-            </p>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 };
