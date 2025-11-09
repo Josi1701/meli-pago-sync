@@ -102,23 +102,23 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
         (o) => o.reconciliationStatus === "not_reconciled"
       ).length;
 
-      // Costs - simplified calculation based on fees
-      const commissions = monthOrders.reduce((sum, o) => {
+      // Costs - ONLY calculated on reconciled and paid orders
+      const commissions = reconciledOrders.reduce((sum, o) => {
         const feeTotal = o.fees?.reduce((feeSum, fee) => feeSum + fee.value, 0) || 0;
         return sum + feeTotal;
       }, 0);
 
-      const refunds = monthOrders
+      const refunds = reconciledOrders
         .filter((o) => o.financialStatus === "refunded")
         .reduce((sum, o) => sum + (o.refund?.amount || 0), 0);
 
-      const fixedFees = financiallyValidValue * 0.01; // 1% estimado
-      const freeShipping = financiallyValidValue * 0.005; // 0.5% estimado
-      const coupons = financiallyValidValue * 0.003; // 0.3% estimado
+      const fixedFees = reconciledValue * 0.01; // 1% estimado
+      const freeShipping = reconciledValue * 0.005; // 0.5% estimado
+      const coupons = reconciledValue * 0.003; // 0.3% estimado
 
       const totalCosts = commissions + fixedFees + freeShipping + coupons + refunds;
-      const costsPercentage = financiallyValidValue > 0
-        ? Math.round((totalCosts / financiallyValidValue) * 100)
+      const costsPercentage = reconciledValue > 0
+        ? Math.round((totalCosts / reconciledValue) * 100)
         : 0;
 
       // Received values
@@ -134,8 +134,8 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
         .filter((o) => o.financialStatus === "retained")
         .reduce((sum, o) => sum + o.soldValue, 0);
 
-      // Net to receive
-      const netToReceive = financiallyValidValue - totalCosts - totalReceived;
+      // Net to receive - based on reconciled orders
+      const netToReceive = reconciledValue - totalCosts - totalReceived;
 
       return {
         month: format(month, "MMM/yyyy", { locale: ptBR }),
@@ -286,8 +286,20 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
               <tbody className="text-sm">
                 {/* Pedidos Section */}
                 <tr className="border-b border-border bg-muted/50">
-                  <td colSpan={periodStats.length + 1} className="py-2 px-4 font-semibold text-muted-foreground">
-                    PEDIDOS
+                  <td colSpan={periodStats.length + 1} className="py-2 px-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="font-semibold text-muted-foreground cursor-help flex items-center gap-1">
+                            🧾 PEDIDOS
+                            <Info className="w-3 h-3" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Mostra o total de vendas do período (independente de conciliação)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
                 </tr>
                 <tr className="border-b border-border hover:bg-muted/50">
@@ -323,8 +335,20 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
 
                 {/* Conciliação Section */}
                 <tr className="border-b border-border bg-success-light">
-                  <td colSpan={periodStats.length + 1} className="py-2 px-4 font-semibold text-success">
-                    CONCILIAÇÃO
+                  <td colSpan={periodStats.length + 1} className="py-2 px-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="font-semibold text-success cursor-help flex items-center gap-1">
+                            ✅ CONCILIAÇÃO
+                            <Info className="w-3 h-3" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Mostra o status da conferência dos pedidos com base nas informações do Mercado Pago</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
                 </tr>
                 <tr className="border-b border-border hover:bg-muted/50">
@@ -370,8 +394,20 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
 
                 {/* Custos Section */}
                 <tr className="border-b border-border bg-danger-light">
-                  <td colSpan={periodStats.length + 1} className="py-2 px-4 font-semibold text-danger">
-                    CUSTOS (–)
+                  <td colSpan={periodStats.length + 1} className="py-2 px-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="font-semibold text-danger cursor-help flex items-center gap-1">
+                            💸 CUSTOS (–)
+                            <Info className="w-3 h-3" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Mostra custos calculados sobre os pedidos conciliados e pagos</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
                 </tr>
                 <tr className="border-b border-border hover:bg-muted/50">
@@ -419,15 +455,29 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
                   {periodStats.map((stat) => (
                     <td key={stat.month} className="text-right py-3 px-4">
                       <div className="text-danger font-bold">{formatCurrency(stat.totalCosts)}</div>
-                      <div className="text-xs text-danger">({stat.costsPercentage}%)</div>
+                      <div className="text-xs text-danger">
+                        {stat.reconciledValue > 0 ? `(${stat.costsPercentage}% sobre conciliados)` : '–'}
+                      </div>
                     </td>
                   ))}
                 </tr>
 
                 {/* Recebimentos Section */}
                 <tr className="border-b border-border bg-muted/50">
-                  <td colSpan={periodStats.length + 1} className="py-2 px-4 font-semibold text-muted-foreground">
-                    RECEBIMENTOS
+                  <td colSpan={periodStats.length + 1} className="py-2 px-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="font-semibold text-muted-foreground cursor-help flex items-center gap-1">
+                            🟢 RECEBIMENTOS
+                            <Info className="w-3 h-3" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Mostra os valores efetivamente recebidos ou a receber dos pedidos conciliados</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
                 </tr>
                 <tr className="border-b border-border hover:bg-muted/50">
