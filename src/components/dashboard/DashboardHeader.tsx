@@ -130,8 +130,8 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
           </div>
         </div>
 
-        {/* Financial Status Cards - Hidden in summary view */}
-        {currentView !== "summary" && (
+        {/* Financial Status Cards - Only shown in table view */}
+        {currentView === "table" && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-5 h-5 text-muted-foreground" />
@@ -266,8 +266,8 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
         </div>
         )}
 
-        {/* Reconciliation Status Cards - Hidden in summary view */}
-        {currentView !== "summary" && (
+        {/* Reconciliation Status Cards - Only shown in table view */}
+        {currentView === "table" && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
