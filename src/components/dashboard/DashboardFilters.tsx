@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Filter, X } from "lucide-react";
+import { Calendar, Filter, X, AlertCircle, DollarSign, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -15,6 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -29,11 +34,11 @@ export interface DateRange {
 export interface Filters {
   mode: FilterMode;
   dateRange: DateRange;
-  status: string[];
+  financialStatus: string[];
+  reconciliationStatus: string[];
   categories: string[];
   minDifference: number | null;
   paymentMethod: string[];
-  situation: string[];
 }
 
 interface DashboardFiltersProps {
@@ -52,34 +57,34 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
     onFiltersChange({
       mode: "sale_date",
       dateRange: { from: undefined, to: undefined },
-      status: [],
+      financialStatus: [],
+      reconciliationStatus: [],
       categories: [],
       minDifference: null,
       paymentMethod: [],
-      situation: [],
     });
   };
 
   const hasActiveFilters = 
     filters.dateRange.from || 
-    filters.status.length > 0 || 
+    filters.financialStatus.length > 0 || 
+    filters.reconciliationStatus.length > 0 || 
     filters.categories.length > 0 ||
     filters.minDifference !== null ||
-    filters.paymentMethod.length > 0 ||
-    filters.situation.length > 0;
+    filters.paymentMethod.length > 0;
 
-  const toggleStatus = (value: string) => {
-    const newStatus = filters.status.includes(value)
-      ? filters.status.filter(s => s !== value)
-      : [...filters.status, value];
-    updateFilters({ status: newStatus });
+  const toggleFinancialStatus = (value: string) => {
+    const newStatus = filters.financialStatus.includes(value)
+      ? filters.financialStatus.filter(s => s !== value)
+      : [...filters.financialStatus, value];
+    updateFilters({ financialStatus: newStatus });
   };
 
-  const toggleSituation = (value: string) => {
-    const newSituation = filters.situation.includes(value)
-      ? filters.situation.filter(s => s !== value)
-      : [...filters.situation, value];
-    updateFilters({ situation: newSituation });
+  const toggleReconciliationStatus = (value: string) => {
+    const newStatus = filters.reconciliationStatus.includes(value)
+      ? filters.reconciliationStatus.filter(s => s !== value)
+      : [...filters.reconciliationStatus, value];
+    updateFilters({ reconciliationStatus: newStatus });
   };
 
   return (
@@ -220,27 +225,75 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="space-y-3 pt-3 border-t animate-fade-in">
-          {/* Status Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Status</label>
+        <div className="space-y-4 pt-3 border-t animate-fade-in">
+          {/* Financial Status Filter */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Status Financeiro</span>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Mostra o estágio do dinheiro no fluxo</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex flex-wrap gap-2">
               {[
-                { value: "ok", label: "Conciliado", color: "bg-success-light text-success" },
-                { value: "difference", label: "Diferença", color: "bg-warning-light text-warning" },
-                { value: "pending", label: "A liberar", color: "bg-neutral-light text-neutral" },
-                { value: "retained", label: "Retido", color: "bg-danger-light text-danger" },
-              ].map((status) => (
+                { value: "released", label: "💸 Liberado", color: "bg-success/10 text-success border-success" },
+                { value: "pending_release", label: "⏳ A liberar", color: "bg-warning/10 text-warning border-warning" },
+                { value: "retained", label: "🔒 Retido", color: "bg-orange-500/10 text-orange-500 border-orange-500" },
+                { value: "refunded", label: "🔁 Devolvido", color: "bg-blue-500/10 text-blue-500 border-blue-500" },
+                { value: "cancelled", label: "🚫 Cancelado", color: "bg-muted text-muted-foreground border-muted-foreground" },
+              ].map(({ value, label, color }) => (
                 <Badge
-                  key={status.value}
-                  variant={filters.status.includes(status.value) ? "default" : "outline"}
+                  key={value}
+                  variant="outline"
                   className={cn(
-                    "cursor-pointer transition-all",
-                    filters.status.includes(status.value) && status.color
+                    "cursor-pointer hover:opacity-80 transition-all",
+                    filters.financialStatus.includes(value) && color
                   )}
-                  onClick={() => toggleStatus(status.value)}
+                  onClick={() => toggleFinancialStatus(value)}
                 >
-                  {status.label}
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Reconciliation Status Filter */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Status de Conciliação</span>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Mostra se os valores conferem</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: "reconciled", label: "✅ Conferido", color: "bg-success/10 text-success border-success" },
+                { value: "difference_detected", label: "⚠️ Diferença detectada", color: "bg-warning/10 text-warning border-warning" },
+                { value: "not_reconciled", label: "❌ Não conferido", color: "bg-danger/10 text-danger border-danger" },
+                { value: "in_progress", label: "⏺️ Em conferência", color: "bg-blue-500/10 text-blue-500 border-blue-500" },
+              ].map(({ value, label, color }) => (
+                <Badge
+                  key={value}
+                  variant="outline"
+                  className={cn(
+                    "cursor-pointer hover:opacity-80 transition-all",
+                    filters.reconciliationStatus.includes(value) && color
+                  )}
+                  onClick={() => toggleReconciliationStatus(value)}
+                >
+                  {label}
                 </Badge>
               ))}
             </div>
@@ -287,29 +340,6 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
               placeholder="0.00"
             />
           </div>
-
-          {/* Situation Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Situação da venda</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: "refunded", label: "Devolvida", icon: "🔁" },
-                { value: "partial_refund", label: "Devolução parcial", icon: "🔁" },
-                { value: "in_dispute", label: "Em disputa", icon: "⚖️" },
-                { value: "chargeback", label: "Chargeback", icon: "💳" },
-                { value: "cancelled_before_payment", label: "Cancelada", icon: "🚫" },
-              ].map((situation) => (
-                <Badge
-                  key={situation.value}
-                  variant={filters.situation.includes(situation.value) ? "default" : "outline"}
-                  className="cursor-pointer transition-all"
-                  onClick={() => toggleSituation(situation.value)}
-                >
-                  {situation.icon} {situation.label}
-                </Badge>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
@@ -322,19 +352,19 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
               {filters.dateRange.to ? format(filters.dateRange.to, "dd/MM") : "..."}
             </Badge>
           )}
-          {filters.status.length > 0 && (
+          {filters.financialStatus.length > 0 && (
             <Badge variant="secondary">
-              {filters.status.length} status
+              {filters.financialStatus.length} status financeiro
+            </Badge>
+          )}
+          {filters.reconciliationStatus.length > 0 && (
+            <Badge variant="secondary">
+              {filters.reconciliationStatus.length} status conciliação
             </Badge>
           )}
           {filters.minDifference !== null && (
             <Badge variant="secondary">
               Dif. ≥ R$ {filters.minDifference.toFixed(2)}
-            </Badge>
-          )}
-          {filters.situation.length > 0 && (
-            <Badge variant="secondary">
-              {filters.situation.length} situações
             </Badge>
           )}
           <Button

@@ -5,13 +5,18 @@ import OrderDetailPanel from "@/components/dashboard/OrderDetailPanel";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import DashboardFilters, { type Filters } from "@/components/dashboard/DashboardFilters";
 
-export type OrderSituation = 
-  | "active"
-  | "cancelled_before_payment"
-  | "refunded"
-  | "partial_refund"
-  | "in_dispute"
-  | "chargeback";
+export type FinancialStatus = 
+  | "released"           // 💸 Liberado - Valor recebido e disponível
+  | "pending_release"    // ⏳ A liberar - Pagamento aprovado, mas ainda retido
+  | "retained"           // 🔒 Retido - Valor bloqueado por disputa ou chargeback
+  | "refunded"           // 🔁 Devolvido - Valor reembolsado ao cliente
+  | "cancelled";         // 🚫 Cancelado - Venda cancelada antes do pagamento
+
+export type ReconciliationStatus = 
+  | "reconciled"         // ✅ Conferido - Valor confere
+  | "difference_detected" // ⚠️ Diferença detectada - Valores diferentes mas explicável
+  | "not_reconciled"     // ❌ Não conferido - Sem registro correspondente
+  | "in_progress";       // ⏺️ Em conferência - Processo em execução
 
 export interface Order {
   id: string;
@@ -21,8 +26,8 @@ export interface Order {
   soldValue: number;
   receivedValue: number;
   difference: number;
-  status: "ok" | "difference" | "pending" | "retained";
-  situation?: OrderSituation;
+  financialStatus: FinancialStatus;
+  reconciliationStatus: ReconciliationStatus;
   refund?: {
     amount: number;
     date: string;
@@ -35,6 +40,7 @@ export interface Order {
     origin: string;
   }>;
   explanation?: string;
+  releaseDate?: string; // Data prevista de liberação
 }
 
 // Mock data
@@ -47,8 +53,8 @@ const mockOrders: Order[] = [
     soldValue: 150.00,
     receivedValue: 145.50,
     difference: -4.50,
-    status: "difference",
-    situation: "active",
+    financialStatus: "released",
+    reconciliationStatus: "difference_detected",
     fees: [
       { name: "Intermediação", percentage: 2.99, value: 4.49, origin: "Mercado Pago" },
       { name: "Antecipação", percentage: 0.01, value: 0.01, origin: "Mercado Pago" },
@@ -63,8 +69,8 @@ const mockOrders: Order[] = [
     soldValue: 200.00,
     receivedValue: 200.00,
     difference: 0,
-    status: "ok",
-    situation: "active",
+    financialStatus: "released",
+    reconciliationStatus: "reconciled",
   },
   {
     id: "#324053",
@@ -74,8 +80,9 @@ const mockOrders: Order[] = [
     soldValue: 350.00,
     receivedValue: 0,
     difference: -350.00,
-    status: "pending",
-    situation: "active",
+    financialStatus: "pending_release",
+    reconciliationStatus: "in_progress",
+    releaseDate: "2025-01-12",
     explanation: "Pedido pago pelo cliente, aguardando liberação do marketplace."
   },
   {
@@ -86,8 +93,8 @@ const mockOrders: Order[] = [
     soldValue: 120.00,
     receivedValue: 0,
     difference: -120.00,
-    status: "retained",
-    situation: "in_dispute",
+    financialStatus: "retained",
+    reconciliationStatus: "not_reconciled",
     explanation: "Valor bloqueado por disputa aberta pelo comprador."
   },
   {
@@ -98,8 +105,8 @@ const mockOrders: Order[] = [
     soldValue: 180.00,
     receivedValue: 175.20,
     difference: -4.80,
-    status: "difference",
-    situation: "active",
+    financialStatus: "released",
+    reconciliationStatus: "difference_detected",
     fees: [
       { name: "Intermediação", percentage: 2.67, value: 4.80, origin: "Mercado Pago" },
     ],
@@ -112,8 +119,8 @@ const mockOrders: Order[] = [
     soldValue: 220.00,
     receivedValue: 0,
     difference: -220.00,
-    status: "ok",
-    situation: "refunded",
+    financialStatus: "refunded",
+    reconciliationStatus: "reconciled",
     refund: {
       amount: 220.00,
       date: "2025-01-12",
@@ -129,8 +136,8 @@ const mockOrders: Order[] = [
     soldValue: 450.00,
     receivedValue: 0,
     difference: -450.00,
-    status: "retained",
-    situation: "chargeback",
+    financialStatus: "retained",
+    reconciliationStatus: "reconciled",
     explanation: "Pagamento estornado pelo emissor do cartão. Valor perdido."
   },
   {
@@ -141,8 +148,8 @@ const mockOrders: Order[] = [
     soldValue: 3200.00,
     receivedValue: 0,
     difference: -3200.00,
-    status: "ok",
-    situation: "cancelled_before_payment",
+    financialStatus: "cancelled",
+    reconciliationStatus: "reconciled",
     explanation: "Venda cancelada antes de gerar pagamento. Nenhum valor afetado."
   },
   {
@@ -153,8 +160,8 @@ const mockOrders: Order[] = [
     soldValue: 280.00,
     receivedValue: 240.00,
     difference: -40.00,
-    status: "difference",
-    situation: "partial_refund",
+    financialStatus: "released",
+    reconciliationStatus: "difference_detected",
     refund: {
       amount: 40.00,
       date: "2025-01-10",
@@ -170,11 +177,11 @@ const Dashboard = () => {
   const [filters, setFilters] = useState<Filters>({
     mode: "sale_date",
     dateRange: { from: undefined, to: undefined },
-    status: [],
+    financialStatus: [],
+    reconciliationStatus: [],
     categories: [],
     minDifference: null,
     paymentMethod: [],
-    situation: [],
   });
 
   const filteredOrders = useMemo(() => {
@@ -186,17 +193,14 @@ const Dashboard = () => {
         if (filters.dateRange.to && orderDate > filters.dateRange.to) return false;
       }
 
-      // Filter by status
-      if (filters.status.length > 0 && !filters.status.includes(order.status)) {
+      // Filter by financial status
+      if (filters.financialStatus.length > 0 && !filters.financialStatus.includes(order.financialStatus)) {
         return false;
       }
 
-      // Filter by situation
-      if (filters.situation.length > 0) {
-        const orderSituation = order.situation || "active";
-        if (!filters.situation.includes(orderSituation)) {
-          return false;
-        }
+      // Filter by reconciliation status
+      if (filters.reconciliationStatus.length > 0 && !filters.reconciliationStatus.includes(order.reconciliationStatus)) {
+        return false;
       }
 
       // Filter by minimum difference

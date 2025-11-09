@@ -4,61 +4,80 @@ import { Badge } from "@/components/ui/badge";
 import { X, CheckCircle2, Search, AlertTriangle, Clock, Lock, XCircle, RotateCcw, Scale, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { Order, OrderSituation } from "@/pages/Dashboard";
+import type { Order, FinancialStatus, ReconciliationStatus } from "@/pages/Dashboard";
 
 interface OrderDetailPanelProps {
   order: Order | null;
   onClose: () => void;
 }
 
-const statusConfig = {
-  ok: { icon: CheckCircle2, label: "OK", color: "text-success" },
-  difference: { icon: AlertTriangle, label: "Diferença", color: "text-warning" },
-  pending: { icon: Clock, label: "A liberar", color: "text-neutral" },
-  retained: { icon: Lock, label: "Retido", color: "text-danger" },
-};
-
-const situationConfig: Record<OrderSituation, {
-  icon: typeof XCircle;
+const financialStatusConfig: Record<FinancialStatus, {
+  icon: typeof CheckCircle2;
   label: string;
-  badge: string;
+  color: string;
   badgeColor: string;
 }> = {
-  active: {
+  released: {
     icon: CheckCircle2,
-    label: "Venda ativa",
-    badge: "",
-    badgeColor: "",
+    label: "Liberado",
+    color: "text-success",
+    badgeColor: "bg-success/10 text-success border-success",
   },
-  cancelled_before_payment: {
-    icon: XCircle,
-    label: "Cancelado antes do repasse",
-    badge: "Cancelado",
-    badgeColor: "bg-muted text-muted-foreground",
+  pending_release: {
+    icon: Clock,
+    label: "A liberar",
+    color: "text-warning",
+    badgeColor: "bg-warning/10 text-warning border-warning",
+  },
+  retained: {
+    icon: Lock,
+    label: "Retido",
+    color: "text-orange-500",
+    badgeColor: "bg-orange-500/10 text-orange-500 border-orange-500",
   },
   refunded: {
     icon: RotateCcw,
     label: "Devolvido",
-    badge: "Devolvido",
+    color: "text-blue-500",
+    badgeColor: "bg-blue-500/10 text-blue-500 border-blue-500",
+  },
+  cancelled: {
+    icon: XCircle,
+    label: "Cancelado",
+    color: "text-muted-foreground",
+    badgeColor: "bg-muted text-muted-foreground border-muted-foreground",
+  },
+};
+
+const reconciliationStatusConfig: Record<ReconciliationStatus, {
+  icon: typeof CheckCircle2;
+  label: string;
+  color: string;
+  badgeColor: string;
+}> = {
+  reconciled: {
+    icon: CheckCircle2,
+    label: "Conferido",
+    color: "text-success",
     badgeColor: "bg-success/10 text-success border-success",
   },
-  partial_refund: {
-    icon: RotateCcw,
-    label: "Devolução parcial",
-    badge: "Devolução parcial",
+  difference_detected: {
+    icon: AlertTriangle,
+    label: "Diferença detectada",
+    color: "text-warning",
     badgeColor: "bg-warning/10 text-warning border-warning",
   },
-  in_dispute: {
-    icon: Scale,
-    label: "Em disputa",
-    badge: "Em disputa",
-    badgeColor: "bg-warning/10 text-warning border-warning",
-  },
-  chargeback: {
-    icon: CreditCard,
-    label: "Perda confirmada",
-    badge: "Perda confirmada",
+  not_reconciled: {
+    icon: XCircle,
+    label: "Não conferido",
+    color: "text-danger",
     badgeColor: "bg-danger/10 text-danger border-danger",
+  },
+  in_progress: {
+    icon: Clock,
+    label: "Em conferência",
+    color: "text-blue-500",
+    badgeColor: "bg-blue-500/10 text-blue-500 border-blue-500",
   },
 };
 
@@ -74,11 +93,10 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
     );
   }
 
-  const StatusIcon = statusConfig[order.status].icon;
-  const situation = order.situation || "active";
-  const SituationIcon = situationConfig[situation].icon;
-  const isRefunded = situation === "refunded" || situation === "partial_refund";
-  const isCancelled = situation === "cancelled_before_payment";
+  const FinancialIcon = financialStatusConfig[order.financialStatus].icon;
+  const ReconciliationIcon = reconciliationStatusConfig[order.reconciliationStatus].icon;
+  const isRefunded = order.financialStatus === "refunded";
+  const isCancelled = order.financialStatus === "cancelled";
 
   return (
     <Card className="p-6 space-y-6">
@@ -96,23 +114,55 @@ const OrderDetailPanel = ({ order, onClose }: OrderDetailPanelProps) => {
 
       <Separator />
 
-      {/* Status and Situation Badges */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 rounded-lg">
-          <StatusIcon className={cn("w-5 h-5", statusConfig[order.status].color)} />
-          <span className={cn("font-medium", statusConfig[order.status].color)}>
-            {statusConfig[order.status].label}
-          </span>
+      {/* Two Status Sections */}
+      <div className="space-y-4">
+        {/* Financial Status */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            1️⃣ Movimento financeiro
+          </h4>
+          <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn("gap-1.5", financialStatusConfig[order.financialStatus].badgeColor)}>
+                <FinancialIcon className="w-4 h-4" />
+                {financialStatusConfig[order.financialStatus].label}
+              </Badge>
+            </div>
+            {order.releaseDate && order.financialStatus === "pending_release" && (
+              <p className="text-xs text-muted-foreground">
+                Previsto para: {new Date(order.releaseDate).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Origem: {order.channel}
+            </p>
+          </div>
         </div>
 
-        {situation !== "active" && (
-          <div className="flex items-center justify-center gap-2">
-            <Badge variant="outline" className={cn("gap-1.5 py-1.5", situationConfig[situation].badgeColor)}>
-              <SituationIcon className="w-4 h-4" />
-              {situationConfig[situation].badge}
-            </Badge>
+        {/* Reconciliation Status */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            2️⃣ Conciliação
+          </h4>
+          <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn("gap-1.5", reconciliationStatusConfig[order.reconciliationStatus].badgeColor)}>
+                <ReconciliationIcon className="w-4 h-4" />
+                {reconciliationStatusConfig[order.reconciliationStatus].label}
+              </Badge>
+            </div>
+            {order.reconciliationStatus === "reconciled" && (
+              <p className="text-xs text-success">
+                Conferido automaticamente
+              </p>
+            )}
+            {order.reconciliationStatus === "difference_detected" && order.difference !== 0 && (
+              <p className="text-xs text-warning">
+                Diferença de R$ {Math.abs(order.difference).toFixed(2)}
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <Separator />
