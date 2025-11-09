@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Calendar, Filter, X, AlertCircle, DollarSign, HelpCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Filter, X, AlertCircle, DollarSign, HelpCircle, ShoppingCart, Banknote } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -48,6 +49,21 @@ interface DashboardFiltersProps {
 
 const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { toast } = useToast();
+  const [previousMode, setPreviousMode] = useState(filters.mode);
+
+  // Show toast when mode changes
+  useEffect(() => {
+    if (previousMode !== filters.mode) {
+      toast({
+        title: filters.mode === "payment_date" 
+          ? "💸 Exibindo por data de repasse (visão de caixa)"
+          : "🛒 Exibindo por data de venda (visão de vendas)",
+        duration: 3000,
+      });
+      setPreviousMode(filters.mode);
+    }
+  }, [filters.mode, previousMode, toast]);
 
   const updateFilters = (updates: Partial<Filters>) => {
     onFiltersChange({ ...filters, ...updates });
@@ -89,156 +105,206 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
 
   return (
     <Card className="p-4 space-y-4 animate-fade-in">
-      {/* Mode Toggle */}
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Ver por:
-        </p>
-        <div className="flex gap-2">
-          <Button
-            variant={filters.mode === "sale_date" ? "default" : "outline"}
-            onClick={() => updateFilters({ mode: "sale_date" })}
-            className={cn(
-              "flex-1 gap-2 transition-all",
-              filters.mode === "sale_date" && "shadow-sm"
-            )}
-          >
-            🛒 Data da venda
-          </Button>
-          <Button
-            variant={filters.mode === "payment_date" ? "default" : "outline"}
-            onClick={() => updateFilters({ mode: "payment_date" })}
-            className={cn(
-              "flex-1 gap-2 transition-all",
-              filters.mode === "payment_date" && "shadow-sm"
-            )}
-          >
-            💸 Data do repasse
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground text-center animate-fade-in">
-          {filters.mode === "sale_date" 
-            ? "Exibindo dados por data de venda 🛒" 
-            : "Exibindo dados por data de repasse 💸"}
-        </p>
-      </div>
+      {/* Chips Sempre Visíveis */}
+      <div className="flex flex-wrap items-center gap-2 pb-3 border-b">
+        <span className="text-sm font-medium text-muted-foreground">Filtros:</span>
+        
+        {/* Mode Chip */}
+        <Badge 
+          variant="secondary" 
+          className="gap-1 cursor-pointer hover:opacity-80"
+          onClick={() => {}}
+        >
+          {filters.mode === "payment_date" ? "💸" : "🛒"}
+          Modo: {filters.mode === "payment_date" ? "Repasse" : "Venda"}
+        </Badge>
 
-      {/* Date Range Picker */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">De</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !filters.dateRange.from && "text-muted-foreground"
-                )}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {filters.dateRange.from ? (
-                  format(filters.dateRange.from, "dd/MM/yyyy")
-                ) : (
-                  <span>Selecione</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarPicker
-                mode="single"
-                selected={filters.dateRange.from}
-                onSelect={(date) => updateFilters({ 
-                  dateRange: { ...filters.dateRange, from: date } 
-                })}
-                disabled={(date) => {
-                  const today = new Date();
-                  const sixtyDaysAgo = new Date();
-                  sixtyDaysAgo.setDate(today.getDate() - 60);
-                  return date > today || date < sixtyDaysAgo;
+        {/* Period Chip */}
+        {filters.dateRange.from && (
+          <Badge variant="secondary" className="gap-1">
+            <Calendar className="w-3 h-3" />
+            Período: {format(filters.dateRange.from, "dd/MM")}
+            {filters.dateRange.to && ` – ${format(filters.dateRange.to, "dd/MM")}`}
+          </Badge>
+        )}
+
+        {/* Financial Status Chips */}
+        {filters.financialStatus.length > 0 ? (
+          filters.financialStatus.map(status => (
+            <Badge key={status} variant="outline" className="gap-1">
+              Fin: {status === "released" ? "Liberado" : 
+                    status === "pending_release" ? "A liberar" :
+                    status === "retained" ? "Retido" :
+                    status === "refunded" ? "Devolvido" : "Cancelado"}
+              <X 
+                className="w-3 h-3 cursor-pointer hover:text-danger" 
+                onClick={() => {
+                  updateFilters({ 
+                    financialStatus: filters.financialStatus.filter(s => s !== status) 
+                  });
                 }}
-                initialFocus
-                className="pointer-events-auto"
               />
-            </PopoverContent>
-          </Popover>
-        </div>
+            </Badge>
+          ))
+        ) : (
+          <Badge variant="secondary" className="gap-1">
+            Fin: Todos
+          </Badge>
+        )}
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Até</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !filters.dateRange.to && "text-muted-foreground"
-                )}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {filters.dateRange.to ? (
-                  format(filters.dateRange.to, "dd/MM/yyyy")
-                ) : (
-                  <span>Selecione</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarPicker
-                mode="single"
-                selected={filters.dateRange.to}
-                onSelect={(date) => updateFilters({ 
-                  dateRange: { ...filters.dateRange, to: date } 
-                })}
-                disabled={(date) => {
-                  const today = new Date();
-                  const from = filters.dateRange.from;
-                  if (from) {
-                    const maxDate = new Date(from);
-                    maxDate.setDate(maxDate.getDate() + 60);
-                    return date > today || date < from || date > maxDate;
-                  }
-                  return date > today;
+        {/* Reconciliation Status Chips */}
+        {filters.reconciliationStatus.length > 0 ? (
+          filters.reconciliationStatus.map(status => (
+            <Badge key={status} variant="outline" className="gap-1">
+              Conc: {status === "reconciled" ? "Conferido" :
+                     status === "difference_detected" ? "Diferença" :
+                     status === "not_reconciled" ? "Não conferido" : "Em conferência"}
+              <X 
+                className="w-3 h-3 cursor-pointer hover:text-danger" 
+                onClick={() => {
+                  updateFilters({ 
+                    reconciliationStatus: filters.reconciliationStatus.filter(s => s !== status) 
+                  });
                 }}
-                initialFocus
-                className="pointer-events-auto"
               />
-            </PopoverContent>
-          </Popover>
-        </div>
+            </Badge>
+          ))
+        ) : (
+          <Badge variant="secondary" className="gap-1">
+            Conc: Todos
+          </Badge>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="ml-auto h-7 gap-1 px-2"
+        >
+          <Filter className="w-3 h-3" />
+          {showAdvanced ? "Ocultar" : "Editar filtros"}
+        </Button>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Máximo de 60 dias por período
-      </p>
-
-      {/* Advanced Filters Toggle */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className="w-full gap-2"
-      >
-        <Filter className="w-4 h-4" />
-        {showAdvanced ? "Ocultar filtros avançados" : "Mostrar filtros avançados"}
-      </Button>
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="space-y-4 pt-3 border-t animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
+          {/* Mode Toggle */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Tipo de data</label>
+            <div className="flex gap-2">
+              <Button
+                variant={filters.mode === "sale_date" ? "default" : "outline"}
+                onClick={() => updateFilters({ mode: "sale_date" })}
+                className="flex-1 gap-2"
+                size="sm"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Data da venda
+              </Button>
+              <Button
+                variant={filters.mode === "payment_date" ? "default" : "outline"}
+                onClick={() => updateFilters({ mode: "payment_date" })}
+                className="flex-1 gap-2"
+                size="sm"
+              >
+                <Banknote className="w-4 h-4" />
+                Data do repasse
+              </Button>
+            </div>
+          </div>
+
+          {/* Date Range Picker */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">De</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.dateRange.from && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {filters.dateRange.from ? (
+                      format(filters.dateRange.from, "dd/MM/yyyy")
+                    ) : (
+                      <span>Selecione</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarPicker
+                    mode="single"
+                    selected={filters.dateRange.from}
+                    onSelect={(date) => updateFilters({ 
+                      dateRange: { ...filters.dateRange, from: date } 
+                    })}
+                    disabled={(date) => {
+                      const today = new Date();
+                      return date > today;
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Até</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.dateRange.to && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {filters.dateRange.to ? (
+                      format(filters.dateRange.to, "dd/MM/yyyy")
+                    ) : (
+                      <span>Selecione</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarPicker
+                    mode="single"
+                    selected={filters.dateRange.to}
+                    onSelect={(date) => updateFilters({ 
+                      dateRange: { ...filters.dateRange, to: date } 
+                    })}
+                    disabled={(date) => {
+                      const today = new Date();
+                      const from = filters.dateRange.from;
+                      if (from) {
+                        const maxDate = new Date(from);
+                        maxDate.setDate(maxDate.getDate() + 60);
+                        return date > today || date < from || date > maxDate;
+                      }
+                      return date > today;
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Máximo de 60 dias por período
+          </p>
           {/* Financial Status Filter */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Status Financeiro</span>
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Mostra o estágio do dinheiro no fluxo</p>
-                </TooltipContent>
-              </Tooltip>
+              <span className="text-sm font-medium text-foreground">Status Financeiro (multi-seleção)</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {[
@@ -267,15 +333,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Status de Conciliação</span>
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Mostra se os valores conferem</p>
-                </TooltipContent>
-              </Tooltip>
+              <span className="text-sm font-medium text-foreground">Status de Conciliação (multi-seleção)</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {[
@@ -340,42 +398,6 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
               placeholder="0.00"
             />
           </div>
-        </div>
-      )}
-
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 pt-3 border-t">
-          {filters.dateRange.from && (
-            <Badge variant="secondary" className="gap-1">
-              Período: {format(filters.dateRange.from, "dd/MM")} - 
-              {filters.dateRange.to ? format(filters.dateRange.to, "dd/MM") : "..."}
-            </Badge>
-          )}
-          {filters.financialStatus.length > 0 && (
-            <Badge variant="secondary">
-              {filters.financialStatus.length} status financeiro
-            </Badge>
-          )}
-          {filters.reconciliationStatus.length > 0 && (
-            <Badge variant="secondary">
-              {filters.reconciliationStatus.length} status conciliação
-            </Badge>
-          )}
-          {filters.minDifference !== null && (
-            <Badge variant="secondary">
-              Dif. ≥ R$ {filters.minDifference.toFixed(2)}
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="h-6 gap-1 px-2"
-          >
-            <X className="w-3 h-3" />
-            Limpar filtros
-          </Button>
         </div>
       )}
     </Card>

@@ -839,9 +839,20 @@ const mockOrders: Order[] = [
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [currentView, setCurrentView] = useState<"table" | "charts" | "summary">("table");
+  
+  // Default to current month and payment_date mode
+  const currentMonthStart = new Date();
+  currentMonthStart.setDate(1);
+  currentMonthStart.setHours(0, 0, 0, 0);
+  
+  const currentMonthEnd = new Date();
+  currentMonthEnd.setMonth(currentMonthEnd.getMonth() + 1);
+  currentMonthEnd.setDate(0);
+  currentMonthEnd.setHours(23, 59, 59, 999);
+  
   const [filters, setFilters] = useState<Filters>({
-    mode: "sale_date",
-    dateRange: { from: undefined, to: undefined },
+    mode: "payment_date",
+    dateRange: { from: currentMonthStart, to: currentMonthEnd },
     financialStatus: [],
     reconciliationStatus: [],
     categories: [],
@@ -887,15 +898,37 @@ const Dashboard = () => {
     }
   };
 
+  const handleCardClick = (filterType: 'financial' | 'reconciliation', value: string) => {
+    if (filterType === 'financial') {
+      setFilters(prev => ({
+        ...prev,
+        financialStatus: [value]
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        reconciliationStatus: [value]
+      }));
+    }
+    setCurrentView('table');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader 
         onToggleView={handleToggleView}
         currentView={currentView}
         orders={filteredOrders}
+        onCardClick={handleCardClick}
       />
       
       <div className="container mx-auto p-6 space-y-6">
+        {/* Master Filters - Always visible */}
+        <DashboardFilters 
+          filters={filters} 
+          onFiltersChange={setFilters}
+        />
+        
         {currentView === "summary" ? (
           <ManagementSummary orders={filteredOrders} />
         ) : currentView === "charts" ? (
@@ -903,10 +936,6 @@ const Dashboard = () => {
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <DashboardFilters 
-                filters={filters} 
-                onFiltersChange={setFilters}
-              />
               <OrdersTable 
                 orders={filteredOrders} 
                 onSelectOrder={setSelectedOrder}

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DollarSign, AlertTriangle, Clock, Lock, BarChart3, List, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Order } from "@/pages/Dashboard";
 import { useMemo } from "react";
 
@@ -8,9 +9,10 @@ interface DashboardHeaderProps {
   onToggleView: () => void;
   currentView: "table" | "charts" | "summary";
   orders: Order[];
+  onCardClick?: (filterType: 'financial' | 'reconciliation', value: string) => void;
 }
 
-const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: DashboardHeaderProps) => {
   const stats = useMemo(() => {
     let releasedValue = 0;
     let releasedCount = 0;
@@ -134,68 +136,128 @@ const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderP
             </h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card className="p-4 bg-success-light border-success-border hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">💸</span>
-                <span className="text-sm font-medium text-success">Liberado</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.financial.released.count}</p>
-                <p className="text-sm text-muted-foreground">
-                  R$ {stats.financial.released.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-success-light border-success-border hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('financial', 'released')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">💸</span>
+                      <span className="text-sm font-medium text-success">Liberado</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.financial.released.count}</p>
+                      <p className="text-sm text-muted-foreground">
+                        R$ {stats.financial.released.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Valores já depositados na conta. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-warning-light border-warning-border hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">⏳</span>
-                <span className="text-sm font-medium text-warning">A liberar</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.financial.pending.count}</p>
-                <p className="text-sm text-muted-foreground">
-                  R$ {stats.financial.pending.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-warning-light border-warning-border hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('financial', 'pending_release')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">⏳</span>
+                      <span className="text-sm font-medium text-warning">A liberar</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.financial.pending.count}</p>
+                      <p className="text-sm text-muted-foreground">
+                        R$ {stats.financial.pending.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Valores aguardando liberação do marketplace. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-orange-500/10 border-orange-500/20 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🔒</span>
-                <span className="text-sm font-medium text-orange-500">Retido</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.financial.retained.count}</p>
-                <p className="text-sm text-muted-foreground">
-                  R$ {stats.financial.retained.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-orange-500/10 border-orange-500/20 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('financial', 'retained')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">🔒</span>
+                      <span className="text-sm font-medium text-orange-500">Retido</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.financial.retained.count}</p>
+                      <p className="text-sm text-muted-foreground">
+                        R$ {stats.financial.retained.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Valores retidos por disputas ou análises. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-blue-500/10 border-blue-500/20 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🔁</span>
-                <span className="text-sm font-medium text-blue-500">Devolvido</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.financial.refunded.count}</p>
-                <p className="text-sm text-muted-foreground">
-                  R$ {stats.financial.refunded.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-blue-500/10 border-blue-500/20 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('financial', 'refunded')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">🔁</span>
+                      <span className="text-sm font-medium text-blue-500">Devolvido</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.financial.refunded.count}</p>
+                      <p className="text-sm text-muted-foreground">
+                        R$ {stats.financial.refunded.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Valores estornados por devoluções. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-muted border-muted hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🚫</span>
-                <span className="text-sm font-medium text-muted-foreground">Cancelado</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.financial.cancelled.count}</p>
-                <p className="text-sm text-muted-foreground">Antes do repasse</p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-muted border-muted hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('financial', 'cancelled')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">🚫</span>
+                      <span className="text-sm font-medium text-muted-foreground">Cancelado</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.financial.cancelled.count}</p>
+                      <p className="text-sm text-muted-foreground">Antes do repasse</p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Pedidos cancelados antes do pagamento. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         )}
@@ -210,53 +272,101 @@ const DashboardHeader = ({ onToggleView, currentView, orders }: DashboardHeaderP
             </h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-4 bg-success-light border-success-border hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="w-5 h-5 text-success" />
-                <span className="text-sm font-medium text-success">Conferido</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.reconciliation.reconciled.percentage}%</p>
-                <p className="text-sm text-muted-foreground">
-                  {stats.reconciliation.reconciled.count} pedidos
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-success-light border-success-border hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('reconciliation', 'reconciled')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-success" />
+                      <span className="text-sm font-medium text-success">Conferido</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.reconciliation.reconciled.percentage}%</p>
+                      <p className="text-sm text-muted-foreground">
+                        {stats.reconciliation.reconciled.count} pedidos
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Pedidos conferidos e validados. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-warning-light border-warning-border hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-5 h-5 text-warning" />
-                <span className="text-sm font-medium text-warning">Diferença detectada</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.reconciliation.difference.count}</p>
-                <p className="text-sm text-muted-foreground">
-                  R$ {stats.reconciliation.difference.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-warning-light border-warning-border hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('reconciliation', 'difference_detected')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-5 h-5 text-warning" />
+                      <span className="text-sm font-medium text-warning">Diferença detectada</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.reconciliation.difference.count}</p>
+                      <p className="text-sm text-muted-foreground">
+                        R$ {stats.reconciliation.difference.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Diferenças geralmente vêm de taxa, antecipação ou devolução. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-danger-light border-danger-border hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <XCircle className="w-5 h-5 text-danger" />
-                <span className="text-sm font-medium text-danger">Não conferido</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.reconciliation.notReconciled.count}</p>
-                <p className="text-sm text-muted-foreground">Sem registro</p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-danger-light border-danger-border hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('reconciliation', 'not_reconciled')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle className="w-5 h-5 text-danger" />
+                      <span className="text-sm font-medium text-danger">Não conferido</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.reconciliation.notReconciled.count}</p>
+                      <p className="text-sm text-muted-foreground">Sem registro</p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Pedidos pendentes de conferência. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <Card className="p-4 bg-blue-500/10 border-blue-500/20 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5 text-blue-500" />
-                <span className="text-sm font-medium text-blue-500">Em conferência</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-foreground">{stats.reconciliation.inProgress.count}</p>
-                <p className="text-sm text-muted-foreground">Processando</p>
-              </div>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className="p-4 bg-blue-500/10 border-blue-500/20 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onCardClick?.('reconciliation', 'in_progress')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-500">Em conferência</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold text-foreground">{stats.reconciliation.inProgress.count}</p>
+                      <p className="text-sm text-muted-foreground">Processando</p>
+                    </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">Conferência em andamento. Clique para filtrar.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         )}
