@@ -908,6 +908,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Master Filters - Always visible at the top */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto p-4">
+          <DashboardFilters 
+            filters={filters} 
+            onFiltersChange={setFilters}
+          />
+        </div>
+      </div>
+
       <DashboardHeader 
         onToggleView={handleToggleView}
         currentView={currentView}
@@ -916,12 +926,6 @@ const Dashboard = () => {
       />
       
       <div className="container mx-auto p-6 space-y-6">
-        {/* Master Filters - Always visible */}
-        <DashboardFilters 
-          filters={filters} 
-          onFiltersChange={setFilters}
-        />
-        
         {currentView === "summary" ? (
           <ManagementSummary orders={filteredOrders} />
         ) : currentView === "charts" ? (
