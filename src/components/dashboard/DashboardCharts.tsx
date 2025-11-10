@@ -495,33 +495,6 @@ const DashboardCharts = ({
 
       {/* Charts Section */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Financial Status Distribution */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Distribuição por Status Financeiro
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {financialStatusData[0]?.count > 0 && `${Math.round(financialStatusData[0].count / financialTotal * 100)}% dos pedidos já liberados`}
-          </p>
-          {financialTotal > 0 ? <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={financialStatusData} layout="horizontal">
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={90} />
-                <Tooltip formatter={(value: number, name: string) => {
-              const item = financialStatusData.find(d => d.name === name);
-              return [`${value} pedidos - R$ ${item?.value.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2
-              })}`, name];
-            }} />
-                <Bar dataKey="count" radius={[0, 8, 8, 0]}>
-                  {financialStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
-              Sem dados para o período
-            </div>}
-        </Card>
-
         {/* Reconciliation Status Distribution */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">
