@@ -148,29 +148,6 @@ const DashboardCharts = ({ orders }: DashboardChartsProps) => {
             </Tooltip>
           </TooltipProvider>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Card className="p-5 bg-blue-500/10 border-blue-500/20 cursor-help">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-500 mb-1">Taxa de conferência</p>
-                      <p className="text-2xl font-bold text-foreground">{reconciliationRate}%</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        📊 Quanto maior, mais previsível seu caixa
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs">Percentual de pedidos que foram conferidos automaticamente. Quanto maior essa taxa, mais confiança você tem nos seus números.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
 
           <TooltipProvider>
             <Tooltip>
