@@ -71,7 +71,7 @@ const BalanceSummary = ({ orders }: BalanceSummaryProps) => {
   return (
     <div className="space-y-4">
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Total Mercado Pago */}
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
@@ -128,33 +128,6 @@ const BalanceSummary = ({ orders }: BalanceSummaryProps) => {
           </CardContent>
         </Card>
 
-        {/* Diferenças Detectadas */}
-        <Card className={balanceData.unresolvedDifferences > 0 ? "border-warning/20 bg-warning-light/50" : "border-border"}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-warning" />
-              Diferenças não resolvidas
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Soma das diferenças detectadas ou em suporte. Não inclui valores já recuperados ou confirmados como custo.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {formatCurrency(balanceData.unresolvedDifferences)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Valores a investigar ou em análise
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Reconciliation Breakdown */}
