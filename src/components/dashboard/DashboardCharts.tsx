@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line, AreaChart, Area } from "recharts";
 import type { Order } from "@/pages/Dashboard";
-import { TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare, DollarSign, Calendar, Wallet, Lock, RotateCcw, TrendingDown } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 interface DashboardChartsProps {
   orders: Order[];
 }
@@ -136,7 +137,251 @@ const DashboardCharts = ({
   const totalPrevisto = timelineData.reduce((s, d) => s + d.previsto, 0);
   const totalRecebido = timelineData.reduce((s, d) => s + d.recebido, 0);
   const avgDifference = totalPrevisto > 0 ? ((totalPrevisto - totalRecebido) / totalPrevisto * 100).toFixed(1) : 0;
+
+  // Cashflow calculations
+  const totalSold = orders.reduce((sum, o) => sum + o.soldValue, 0);
+  const toReceive = orders.filter(o => o.financialStatus === "pending_release").reduce((sum, o) => sum + o.soldValue, 0);
+  const received = orders.filter(o => o.financialStatus === "released").reduce((sum, o) => sum + o.receivedValue, 0);
+  const retained = orders.filter(o => o.financialStatus === "retained").reduce((sum, o) => sum + o.soldValue, 0);
+  const refundedCancelled = orders.filter(o => o.financialStatus === "refunded" || o.financialStatus === "cancelled").reduce((sum, o) => sum + (o.refund?.amount || 0), 0);
+  const netBalance = received + toReceive - retained - refundedCancelled;
+
+  // Cashflow timeline (cumulative)
+  const cashflowTimeline = orders.reduce((acc, order) => {
+    const date = new Date(order.date);
+    const weekKey = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    const existing = acc.find(d => d.date === weekKey);
+    
+    const toReceiveVal = order.financialStatus === "pending_release" ? order.soldValue : 0;
+    const receivedVal = order.financialStatus === "released" ? order.receivedValue : 0;
+    const lostVal = (order.financialStatus === "retained" || order.financialStatus === "refunded" || order.financialStatus === "cancelled") ? (order.refund?.amount || order.soldValue) : 0;
+    
+    if (existing) {
+      existing.aReceber += toReceiveVal;
+      existing.recebido += receivedVal;
+      existing.retidoPerdido += lostVal;
+    } else {
+      acc.push({
+        date: weekKey,
+        aReceber: toReceiveVal,
+        recebido: receivedVal,
+        retidoPerdido: lostVal
+      });
+    }
+    return acc;
+  }, [] as { date: string; aReceber: number; recebido: number; retidoPerdido: number }[])
+  .sort((a, b) => {
+    const [dayA, monthA] = a.date.split('/').map(Number);
+    const [dayB, monthB] = b.date.split('/').map(Number);
+    return monthA !== monthB ? monthA - monthB : dayA - dayB;
+  })
+  .slice(-10);
+
+  // Status breakdown table
+  const statusBreakdown = [
+    {
+      status: "Liberado",
+      count: orders.filter(o => o.financialStatus === "released").length,
+      value: received,
+      percentage: totalSold > 0 ? Math.round((received / totalSold) * 100) : 0,
+      avgDate: "—"
+    },
+    {
+      status: "A liberar",
+      count: orders.filter(o => o.financialStatus === "pending_release").length,
+      value: toReceive,
+      percentage: totalSold > 0 ? Math.round((toReceive / totalSold) * 100) : 0,
+      avgDate: "Variável"
+    },
+    {
+      status: "Retido",
+      count: orders.filter(o => o.financialStatus === "retained").length,
+      value: retained,
+      percentage: totalSold > 0 ? Math.round((retained / totalSold) * 100) : 0,
+      avgDate: "—"
+    },
+    {
+      status: "Devolvido",
+      count: orders.filter(o => o.financialStatus === "refunded").length,
+      value: orders.filter(o => o.financialStatus === "refunded").reduce((s, o) => s + (o.refund?.amount || 0), 0),
+      percentage: totalSold > 0 ? Math.round((orders.filter(o => o.financialStatus === "refunded").reduce((s, o) => s + (o.refund?.amount || 0), 0) / totalSold) * 100) : 0,
+      avgDate: "—"
+    },
+    {
+      status: "Cancelado",
+      count: orders.filter(o => o.financialStatus === "cancelled").length,
+      value: 0,
+      percentage: 0,
+      avgDate: "—"
+    }
+  ];
+
   return <div className="space-y-6">
+      {/* Cashflow Section */}
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-4">💰 Fluxo de Caixa da Conciliação</h2>
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <Card className="p-5 bg-primary/5 border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <DollarSign className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-primary mb-1">Total vendido</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {totalSold.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Base bruta do período
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 bg-blue-500/10 border-blue-500/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Calendar className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-500 mb-1">A receber (a liberar)</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {toReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dinheiro a entrar
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 bg-success-light border-success-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-success/20 rounded-lg">
+                <Wallet className="w-5 h-5 text-success" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-success mb-1">Recebido (liberado)</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dinheiro disponível
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 bg-warning-light border-warning-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-warning/20 rounded-lg">
+                <Lock className="w-5 h-5 text-warning" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-warning mb-1">Retido / em disputa</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {retained.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dinheiro travado
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 bg-danger-light border-danger-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-danger/20 rounded-lg">
+                <RotateCcw className="w-5 h-5 text-danger" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-danger mb-1">Devolvido / cancelado</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {refundedCancelled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dinheiro perdido
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 bg-primary/5 border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-primary mb-1">Saldo líquido previsto</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Projeção de caixa real
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Cashflow Timeline */}
+        {cashflowTimeline.length > 0 && (
+          <Card className="p-6 mb-6">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Linha do Tempo do Fluxo
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Evolução do dinheiro: previsto, recebido e perdido
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={cashflowTimeline}>
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                <Legend />
+                <Area type="monotone" dataKey="aReceber" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} name="A receber" />
+                <Area type="monotone" dataKey="recebido" stackId="1" stroke="hsl(var(--success))" fill="hsl(var(--success))" fillOpacity={0.6} name="Recebido" />
+                <Area type="monotone" dataKey="retidoPerdido" stackId="2" stroke="hsl(var(--danger))" fill="hsl(var(--danger))" fillOpacity={0.6} name="Retido/Perdido" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+        )}
+
+        {/* Status Breakdown Table */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Detalhamento por Status
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Visão completa da distribuição financeira
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Status financeiro</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+                <TableHead className="text-right">Valor total</TableHead>
+                <TableHead className="text-right">% sobre total</TableHead>
+                <TableHead className="text-right">Data média liberação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {statusBreakdown.map((row) => (
+                <TableRow key={row.status}>
+                  <TableCell className="font-medium">{row.status}</TableCell>
+                  <TableCell className="text-right">{row.count}</TableCell>
+                  <TableCell className="text-right">
+                    R$ {row.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right">{row.percentage}%</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{row.avgDate}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
       {/* Performance KPIs */}
       <div>
         <h2 className="text-xl font-bold text-foreground mb-4">💼 Resultados da Conciliação Automática</h2>
