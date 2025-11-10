@@ -5,6 +5,7 @@ import OrderDetailPanel from "@/components/dashboard/OrderDetailPanel";
 import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import DashboardFilters, { type Filters } from "@/components/dashboard/DashboardFilters";
 import ManagementSummary from "@/components/dashboard/ManagementSummary";
+import FinancialAutomationCTA from "@/components/dashboard/FinancialAutomationCTA";
 import { toast } from "@/hooks/use-toast";
 
 export type FinancialStatus = 
@@ -1020,6 +1021,11 @@ const Dashboard = () => {
       />
       
       <div className="container mx-auto p-6 space-y-6">
+        {/* Financial Automation CTA Banner - Shown only in table view */}
+        {currentView === "table" && (
+          <FinancialAutomationCTA orders={filteredOrders} variant="banner" />
+        )}
+
         {currentView === "summary" ? (
           <ManagementSummary orders={filteredOrders} />
         ) : currentView === "charts" ? (

@@ -11,6 +11,7 @@ import type { Order } from "@/pages/Dashboard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import BalanceSummary from "./BalanceSummary";
+import FinancialAutomationCTA from "./FinancialAutomationCTA";
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -178,6 +179,9 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
     <div className="space-y-6">
       {/* Balance Summary */}
       <BalanceSummary orders={orders} />
+      
+      {/* Financial Automation CTA - Card variant for more visibility */}
+      <FinancialAutomationCTA orders={orders} variant="card" />
 
       {/* Cashflow Section */}
       <div>
@@ -291,6 +295,9 @@ const ManagementSummary = ({ orders }: ManagementSummaryProps) => {
             </div>
           </Card>
         </div>
+
+        {/* Financial Automation CTA */}
+        <FinancialAutomationCTA orders={orders} variant="inline" />
 
         {/* Cashflow Timeline */}
         {(() => {

@@ -160,7 +160,12 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
                   </Card>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs max-w-xs">Valores já depositados na conta. Clique para filtrar.</p>
+                  <p className="text-xs max-w-xs">
+                    Valores já depositados na conta. 
+                    <span className="block mt-1 text-primary font-medium">
+                      💡 Quer transformar isso em baixa automática no Contas a Receber?
+                    </span>
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -296,7 +301,12 @@ const DashboardHeader = ({ onToggleView, currentView, orders, onCardClick }: Das
                   </Card>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs max-w-xs">Pedidos conferidos e validados. Clique para filtrar.</p>
+                  <p className="text-xs max-w-xs">
+                    Conferido significa que o Bling já validou o repasse. 
+                    <span className="block mt-1 text-primary font-medium">
+                      Você pode automatizar essa etapa na Conciliação Financeira.
+                    </span>
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
