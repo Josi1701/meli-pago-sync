@@ -444,22 +444,6 @@ const DashboardCharts = ({
               </div>
             </Card>}
 
-          <Card className="p-6 bg-primary/5 border-primary/20 hover:shadow-lg transition-shadow cursor-pointer group">
-            <div className="flex items-start gap-3">
-              <div className="p-3 bg-primary/10 rounded-lg group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-foreground mb-1">Melhorar taxa de conferência</h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Atualmente em {reconciliationRate}%
-                </p>
-                <Button size="sm" variant="outline" className="h-8 text-xs">
-                  Ver dicas <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
-              </div>
-            </div>
-          </Card>
 
           <Card className="p-6 bg-success-light border-success-border hover:shadow-lg transition-shadow cursor-pointer group">
             <div className="flex items-start gap-3">
