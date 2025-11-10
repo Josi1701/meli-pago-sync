@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, AlertTriangle, Clock, Lock } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, Wallet } from "lucide-react";
 import type { PeriodOption } from "@/pages/Onboarding";
 
 interface ResultsStepProps {
@@ -88,23 +88,23 @@ const ResultsStep = ({ period, customDates, onFinish }: ResultsStepProps) => {
             </div>
           </Card>
 
-          <Card className="p-6 bg-danger-light border-danger-border space-y-4">
+          <Card className="p-6 bg-success-light border-success-border space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-danger/10 rounded-lg">
-                  <Lock className="w-6 h-6 text-danger" />
+                <div className="p-3 bg-success/10 rounded-lg">
+                  <Wallet className="w-6 h-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-danger">Retido</p>
-                  <p className="text-3xl font-bold text-foreground">3</p>
+                  <p className="text-sm font-medium text-success">Liberado</p>
+                  <p className="text-3xl font-bold text-foreground">245</p>
                 </div>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Valores bloqueados por disputa, devolução ou taxa
+              Valores já disponíveis na sua conta
             </p>
             <div className="pt-2">
-              <p className="text-2xl font-semibold text-foreground">R$ 350,00</p>
+              <p className="text-2xl font-semibold text-foreground">R$ 30.120,00</p>
             </div>
           </Card>
         </div>
